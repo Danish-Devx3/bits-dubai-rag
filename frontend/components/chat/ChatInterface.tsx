@@ -515,6 +515,7 @@ export function ChatInterface({
               onRetry={message.canRetry && message.originalQuery ? () => retryQuery(message.id, message.originalQuery!, message.retryCount || 0) : undefined}
               recommendations={message.recommendations}
               onRecommendationClick={(query) => handleSend(query)}
+              metadata={message.metadata}
             />
           ))}
 
