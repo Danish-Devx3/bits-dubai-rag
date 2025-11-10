@@ -76,16 +76,15 @@ export class LlmWithToolsService {
             studentId,
           );
           
-          // Don't format here - we'll let LLM format it properly
-          // const formattedResult = this.mcpToolsService.formatToolResponse(
-          //   toolCall.name,
-          //   result,
-          // );
+          const formattedResult = this.mcpToolsService.formatToolResponse(
+            toolCall.name,
+            result,
+          );
           
           toolResults.push({
             tool: toolCall.name,
-            result: '', // Empty - we'll use rawData for formatting
-            rawData: result, // Keep raw data for LLM to format
+            result: formattedResult,
+            rawData: result,
           });
         } catch (error: any) {
           toolResults.push({
@@ -222,91 +221,35 @@ Respond with JSON only, no additional text.`;
     toolResults: any[],
     queryType: QueryType,
   ): string {
-    // Check if user wants tabular format
-    const wantsTable = query.toLowerCase().includes('table') || 
-                       query.toLowerCase().includes('tabular') ||
-                       query.toLowerCase().includes('in a table');
-
-    // Get raw data without the formatted tool response
-    const rawDataArray = toolResults
+    const toolData = toolResults
       .map((tr) => {
         if (tr.error) {
-          return null;
+          return `Tool ${tr.tool} error: ${tr.error}`;
         }
-        return tr.rawData; // Use raw data instead of formatted result
+        return `Data from ${tr.tool}:\n${tr.result}`;
       })
-      .filter(Boolean);
-
-    // If single tool result, use it directly; otherwise combine
-    const toolData = rawDataArray.length === 1 
-      ? JSON.stringify(rawDataArray[0], null, 2)
-      : JSON.stringify({ tools: rawDataArray }, null, 2);
-
-    let formatInstructions = '';
-    if (wantsTable) {
-      formatInstructions = `FORMAT AS TABLE:
-- Create a markdown table with appropriate columns
-- Use | for table structure
-- Include headers for all relevant fields
-- Make it easy to scan and compare data`;
-    } else {
-      formatInstructions = `FORMATTING REQUIREMENTS:
-- Use clear markdown headings (##, ###) to organize sections
-- Format lists using proper markdown list syntax with proper line breaks
-- Use bold text (**text**) for important information like course codes, grades, and statuses
-- Group related information together (e.g., current semester vs previous semester)
-- Add proper spacing and line breaks for readability (use double newlines between sections)
-- Be conversational and helpful, not just a data dump
-- Highlight key information (GPA, status, important dates)
-- Use structured lists where appropriate
-- DO NOT output raw data in a single line - break it into readable sections`;
-    }
+      .join('\n\n');
 
     return `You are an AI assistant helping a student with their academic queries at BITS Dubai.
 
 The user asked: "${query}"
 
-Here is the raw JSON data retrieved from the student's records:
+Here is the raw data retrieved from the student's records:
 ${toolData}
 
-CRITICAL INSTRUCTIONS:
-1. DO NOT output the raw data as-is
-2. Transform this JSON data into a well-structured, professional, and easy-to-read response
-3. Parse the JSON structure and format it properly
-4. ${formatInstructions}
+IMPORTANT: Transform this raw data into a well-structured, professional, and easy-to-read response.
 
-EXAMPLE OF GOOD FORMATTING:
-## Your Academic Grades
+FORMATTING REQUIREMENTS:
+- Use clear markdown headings (##, ###) to organize sections
+- Format lists using proper markdown list syntax
+- Use bold text (**text**) for important information like course codes, grades, and statuses
+- Group related information together (e.g., current semester vs previous semester)
+- Add proper spacing and line breaks for readability
+- Be conversational and helpful, not just a data dump
+- Highlight key information (GPA, status, important dates)
+- Use tables or structured lists where appropriate
 
-Here are your grades organized by semester:
-
-### Current Semester (2025-2026)
-
-**CS F301: Principles of Programming Languages**
-- Status: In Progress
-- Grades: Not yet available
-
-**CS F342: Computer Architecture**
-- Status: In Progress
-- Grades: Not yet available
-
-### Previous Semester (2024-2025)
-
-**CS F213: Object Oriented Programming**
-- Mid-Semester: 75 (Grade: C)
-- Final: 78 (Grade: C)
-- Total: 76.5
-- GPA: 6.0
-- Status: Completed
-
-**CS F214: Logic in Computer Science**
-- Mid-Semester: 85 (Grade: B)
-- Final: 88 (Grade: B)
-- Total: 86.5
-- GPA: 8.0
-- Status: Completed
-
-Now format the provided data in a similar well-structured way. Use proper markdown formatting with headings, lists, and spacing.`;
+Please provide a helpful, personalized, and well-formatted response that presents the information clearly and professionally. Don't just repeat the raw data - format it nicely with proper markdown.`;
   }
 
   /**
@@ -332,18 +275,16 @@ Now format the provided data in a similar well-structured way. Use proper markdo
           toolCall.parameters,
           studentId,
         );
-        // Don't format - let LLM format it
+        const formattedResult = this.mcpToolsService.formatToolResponse(
+          toolCall.name,
+          result,
+        );
         toolResults.push({
           tool: toolCall.name,
-          result: '', // Empty - we'll use rawData for formatting
-          rawData: result, // Keep raw data for LLM to format
+          result: formattedResult,
         });
       } catch (error: any) {
         console.error(`Tool ${toolCall.name} error:`, error);
-        toolResults.push({
-          tool: toolCall.name,
-          error: error.message,
-        });
       }
     }
 
