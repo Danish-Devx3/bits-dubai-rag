@@ -48,7 +48,7 @@ export class LlmWithToolsService {
         {
           query: toolSelectionPrompt,
           mode: 'bypass', // Use bypass mode for tool selection (no RAG needed)
-          top_k: 0,
+          // Don't set top_k for bypass mode - API requires >= 1 or omit it
           include_references: false,
           conversation_history: conversationHistory,
         },
@@ -237,7 +237,7 @@ Respond with JSON only, no additional text.`;
 Here is the JSON data from the database:
 ${rawDataJson}
 
-Format this data according to what the user requested. Use proper markdown formatting (headings, lists, tables, bold text, etc.) based on the user's query. Make it well-structured and easy to read.`;
+Make it well-structured and easy to read.`;
   }
 
   /**

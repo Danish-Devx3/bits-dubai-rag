@@ -30,7 +30,8 @@ export class LlmService {
         {
           query: enhancedQuery,
           mode: mode,
-          top_k: useBypassMode ? 0 : 10, // No retrieval in bypass mode
+          // Don't set top_k for bypass mode (API requires >= 1), use 10 for other modes
+          ...(useBypassMode ? {} : { top_k: 10 }),
           include_references: false,
           conversation_history: conversationHistory,
         },
