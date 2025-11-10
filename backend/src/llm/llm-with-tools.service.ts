@@ -282,12 +282,13 @@ Format this data according to what the user requested. Use proper markdown forma
     
     try {
       // Try bypass mode first
+      // Note: Don't set top_k to 0 - API requires >= 1, or omit it for bypass mode
       const finalApiResponse = await axios.post(
         `${this.lightragUrl}/query`,
         {
           query: finalPrompt,
           mode: 'bypass',
-          top_k: 0,
+          // Don't set top_k for bypass mode - let API use default
           include_references: false,
         },
         {
@@ -320,7 +321,7 @@ Format this data according to what the user requested. Use proper markdown forma
             {
               query: simplePrompt,
               mode: 'bypass',
-              top_k: 0,
+              // Don't set top_k for bypass mode
             },
             {
               headers: {
