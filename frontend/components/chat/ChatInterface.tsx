@@ -17,6 +17,10 @@ interface Message {
   retryCount?: number;
   originalQuery?: string; // Store original query for retry
   recommendations?: string[]; // Recommended queries when no context found
+  metadata?: {
+    duration?: number;
+    durationFormatted?: string;
+  };
 }
 
 interface ChatInterfaceProps {
