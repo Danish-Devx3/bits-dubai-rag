@@ -231,31 +231,13 @@ Respond with JSON only, no additional text.`;
       ? JSON.stringify(rawDataArray[0], null, 2)
       : JSON.stringify(rawDataArray, null, 2);
 
-    // Check if user wants table format
-    const wantsTable = query.toLowerCase().includes('table') || 
-                       query.toLowerCase().includes('tabular') ||
-                       query.toLowerCase().includes('in tabular');
+    // Let LLM understand the format from user's query - no need to detect explicitly
+    return `The user asked: "${query}"
 
-    // Build a more concise prompt to avoid 422 errors
-    if (wantsTable) {
-      return `User asked: "${query}"
-
-Format this JSON data as a markdown table. Create columns: Course Code | Course Name | Semester | Mid-Sem | Final | Total | GPA | Status
-
-JSON Data:
+Here is the JSON data from the database:
 ${rawDataJson}
 
-Output ONLY the markdown table, nothing else.`;
-    }
-
-    return `User asked: "${query}"
-
-Format this JSON data with markdown (headings, lists, bold text). Group by semester.
-
-JSON Data:
-${rawDataJson}
-
-Output formatted markdown only.`;
+Format this data according to what the user requested. Use proper markdown formatting (headings, lists, tables, bold text, etc.) based on the user's query. Make it well-structured and easy to read.`;
   }
 
   /**
@@ -371,14 +353,13 @@ Output formatted markdown only.`;
       ? JSON.stringify(rawDataArray[0], null, 2)
       : JSON.stringify(rawDataArray, null, 2);
     
-    const wantsTable = query.toLowerCase().includes('table') || 
-                       query.toLowerCase().includes('tabular');
-    
-    if (wantsTable) {
-      return `Format this JSON data as a markdown table:\n\n${rawDataJson}\n\nCreate a table with columns: Course Code, Course Name, Semester, Mid-Sem, Final, Total, GPA, Status`;
-    }
-    
-    return `Format this JSON data nicely with markdown:\n\n${rawDataJson}\n\nUse headings, lists, and bold text.`;
+    // Let LLM understand format from query - no explicit detection needed
+    return `User asked: "${query}"
+
+Format this JSON data according to the user's request:
+${rawDataJson}
+
+Use appropriate markdown formatting based on what the user wants.`;
   }
 
   /**
