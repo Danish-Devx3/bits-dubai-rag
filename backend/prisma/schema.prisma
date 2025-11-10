@@ -1,0 +1,155 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId String   @unique
+  name      String
+  email     String   @unique
+  password  String
+  program   String
+  gpa       Float    @default(0)
+  cgpa      Float    @default(0)
+  status    String   @default("active")
+  
+  enrollments Enrollment[]
+  grades      Grade[]
+  payments    Payment[]
+  attendances Attendance[]
+
+  @@map("students")
+}
+
+model Admin {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  adminId   String   @unique
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("admin")
+  status    String   @default("active")
+
+  @@map("admins")
+}
+
+model Course {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  courseCode  String   @unique
+  courseName  String
+  credits     Float
+  department  String
+  description String?
+  type        String   @default("elective")
+  isOpen      Boolean  @default(true)
+  
+  enrollments Enrollment[]
+  schedules   CourseSchedule[]
+  grades      Grade[]
+  attendances Attendance[]
+
+  @@map("courses")
+}
+
+model Enrollment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId String   @db.ObjectId
+  courseId  String   @db.ObjectId
+  semester  String
+  status    String   @default("enrolled")
+  enrolledAt DateTime @default(now())
+  
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@map("enrollments")
+}
+
+model Grade {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId   String   @db.ObjectId
+  courseId    String   @db.ObjectId
+  semester    String
+  midSemMarks Float?
+  midSemGrade String?
+  finalMarks  Float?
+  finalGrade  String?
+  totalMarks  Float?
+  gpa         Float?
+  status      String   @default("in_progress")
+  
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@map("grades")
+}
+
+model Payment {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  studentId     String    @db.ObjectId
+  semester      String
+  amount        Float
+  status        String    @default("pending")
+  dueDate       DateTime
+  paidDate      DateTime?
+  paymentMethod String?
+  transactionId String?
+  description   String?
+  
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Attendance {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId String   @db.ObjectId
+  courseId  String   @db.ObjectId
+  date      DateTime
+  startTime DateTime?
+  endTime   DateTime?
+  status    String   @default("absent")
+  points    Float    @default(0)
+  remarks   String?
+  
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@map("attendances")
+}
+
+model AcademicCalendar {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  semester    String
+  eventType   String
+  title       String
+  startDate   DateTime
+  endDate     DateTime?
+  description String?
+  isActive    Boolean   @default(true)
+
+  @@map("academic_calendars")
+}
+
+model CourseSchedule {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  courseId  String   @db.ObjectId
+  dayOfWeek String
+  startTime String
+  endTime   String
+  room      String?
+  semester  String
+  type      String   @default("lecture")
+  
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@map("course_schedules")
+}

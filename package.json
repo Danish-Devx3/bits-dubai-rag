@@ -1,26 +1,22 @@
 {
   "name": "bits-dubai-rag",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "description": "BITS Dubai ERP/LMS System with RAG-powered LLM Assistant",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
-    "next": "16.0.1"
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run start:dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "start": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
+    "start:frontend": "cd frontend && npm run start",
+    "start:backend": "cd backend && npm run start:prod",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install"
   },
   "devDependencies": {
-    "typescript": "^5",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
-    "eslint": "^9",
-    "eslint-config-next": "16.0.1"
+    "concurrently": "^9.2.1"
   }
 }
+
