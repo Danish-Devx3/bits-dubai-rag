@@ -231,33 +231,80 @@ Respond with JSON only, no additional text.`;
       ? JSON.stringify(rawDataArray[0], null, 2)
       : JSON.stringify(rawDataArray, null, 2);
 
+    // Check if user wants table format
+    const wantsTable = query.toLowerCase().includes('table') || 
+                       query.toLowerCase().includes('tabular') ||
+                       query.toLowerCase().includes('in table');
+
+    // Build format-specific instructions
+    let formatInstructions = '';
+    let exampleOutput = '';
+
+    if (wantsTable) {
+      formatInstructions = `CRITICAL: The user explicitly requested TABLE FORMAT. You MUST create a markdown table.
+
+Create a table with columns like: Course Code | Course Name | Semester | Mid-Sem | Final | Total | GPA | Status
+Use proper markdown table syntax with | separators and header row.`;
+      
+      exampleOutput = `Example table format:
+| Course Code | Course Name | Semester | Mid-Sem | Final | Total | GPA | Status |
+|-------------|-------------|----------|---------|-------|-------|-----|--------|
+| CS F213 | Object Oriented Programming | FIRST SEMESTER 2024-2025 | 75 (C) | 78 (C) | 76.5 | 6.0 | completed |
+| CS F214 | Logic in Computer Science | FIRST SEMESTER 2024-2025 | 85 (B) | 88 (B) | 86.5 | 8.0 | completed |`;
+    } else {
+      formatInstructions = `Format as a well-structured markdown document with:
+- Clear headings (##, ###)
+- Organized sections (group by semester)
+- Bullet points or lists
+- Bold text for important info
+- Proper spacing and line breaks`;
+      
+      exampleOutput = `Example format:
+## Your Academic Grades
+
+### Current Semester (2025-2026)
+
+**CS F301: Principles of Programming Languages**
+- Status: In Progress
+- Grades: Not yet available
+
+### Previous Semester (2024-2025)
+
+**CS F213: Object Oriented Programming**
+- Mid-Semester: 75 (Grade: C)
+- Final: 78 (Grade: C)
+- Total: 76.5
+- GPA: 6.0
+- Status: Completed`;
+    }
+
     return `You are an AI assistant helping a student with their academic queries at BITS Dubai.
 
-The user asked: "${query}"
+USER QUERY: "${query}"
 
-Here is the raw JSON data retrieved from the student's records:
+RAW JSON DATA FROM DATABASE:
 ${rawDataJson}
 
-IMPORTANT INSTRUCTIONS:
-1. Parse the JSON data structure carefully
-2. Transform this raw data into a well-structured, professional response
-3. Format the response based on how the user asked (they may want table, list, summary, etc.)
-4. Use proper markdown formatting (headings, lists, bold text, spacing)
-5. Be conversational and helpful
-6. Organize information logically (group by semester, course, etc.)
-7. Make it easy to read and scan
+CRITICAL REQUIREMENTS:
+1. DO NOT output the raw JSON data as-is
+2. DO NOT output unformatted text
+3. YOU MUST format this data into a well-structured, readable response
+4. Parse the JSON structure and extract the relevant information
+5. Format based on user's request: ${wantsTable ? 'TABLE FORMAT' : 'STRUCTURED MARKDOWN'}
 
-FORMATTING GUIDELINES:
-- Use markdown headings (##, ###) for sections
-- Use lists with proper spacing
-- Use bold (**text**) for important info (course codes, grades, statuses)
-- Add proper line breaks between sections
-- Group related information together
-- If user asked for table format, create a markdown table
-- If user asked for summary, provide a concise overview
-- Adapt to the user's query style and intent
+${formatInstructions}
 
-Now format the provided JSON data into a well-structured response that answers the user's query clearly and professionally.`;
+EXAMPLE OF EXPECTED OUTPUT:
+${exampleOutput}
+
+YOUR TASK:
+1. Parse the JSON data above
+2. Extract course information (courseCode, courseName, semester, grades, etc.)
+3. Format it exactly like the example above
+4. ${wantsTable ? 'Create a markdown table with all the data' : 'Create structured markdown with headings and lists'}
+5. Make it professional and easy to read
+
+IMPORTANT: Your response should ONLY contain the formatted output, not the raw JSON or any explanation. Start directly with the formatted content.`;
   }
 
   /**
