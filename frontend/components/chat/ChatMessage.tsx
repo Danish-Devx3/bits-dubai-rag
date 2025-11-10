@@ -34,9 +34,22 @@ export function ChatMessage({
   const isUser = role === "user";
   
   // Normalize markdown content - ensure proper formatting
+  // But preserve tables and well-formatted content
   const normalizeMarkdown = (text: string): string => {
     if (!text) return text;
     
+    // Check if content contains tables - if so, be more careful with normalization
+    const hasTable = text.includes('|') && text.includes('---');
+    
+    // If it's a well-formatted response (has tables, proper headings), don't normalize aggressively
+    if (hasTable && (text.includes('###') || text.includes('##'))) {
+      // Only normalize excessive newlines, preserve table structure
+      return text
+        .replace(/\n{4,}/g, '\n\n\n') // Max 3 newlines
+        .trim();
+    }
+    
+    // For other content, apply full normalization
     let normalized = text
       // Fix inline bullet points that appear after text (e.g., "dates:*   item")
       .replace(/([^\n])(\*)\s+/g, '$1\n\n$2 ')
@@ -124,7 +137,7 @@ export function ChatMessage({
       
       {/* Message Content */}
       <div className="flex-1 min-w-0">
-        <div className="prose prose-sm max-w-none">
+        <div className="prose prose-sm max-w-none prose-headings:font-bold prose-p:mb-3 prose-ul:mb-3 prose-ol:mb-3 prose-table:w-full prose-table:my-4">
           {isUser ? (
             <p className="text-sm whitespace-pre-wrap text-gray-900 leading-relaxed">{displayContent}</p>
           ) : isLoading && !displayContent ? (
@@ -181,28 +194,30 @@ export function ChatMessage({
                     </pre>
                   ),
                   table: ({ children }) => (
-                    <div className="overflow-x-auto my-4">
-                      <table className="min-w-full border-collapse border border-gray-400 text-sm">
+                    <div className="overflow-x-auto my-4 -mx-2 px-2">
+                      <table className="min-w-full border-collapse border border-gray-300 text-sm bg-white rounded-lg shadow-sm">
                         {children}
                       </table>
                     </div>
                   ),
                   thead: ({ children }) => (
-                    <thead className="bg-gray-200">{children}</thead>
+                    <thead className="bg-gray-100">{children}</thead>
                   ),
                   tbody: ({ children }) => (
-                    <tbody>{children}</tbody>
+                    <tbody className="divide-y divide-gray-200">{children}</tbody>
                   ),
                   tr: ({ children }) => (
-                    <tr className="border-b border-gray-300">{children}</tr>
+                    <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                      {children}
+                    </tr>
                   ),
                   th: ({ children }) => (
-                    <th className="border border-gray-400 px-3 py-2 text-left font-bold text-gray-900 bg-gray-200">
+                    <th className="border border-gray-300 px-4 py-3 text-left font-bold text-gray-900 bg-gray-100 text-xs uppercase tracking-wider">
                       {children}
                     </th>
                   ),
                   td: ({ children }) => (
-                    <td className="border border-gray-400 px-3 py-2 text-gray-900">
+                    <td className="border border-gray-300 px-4 py-2.5 text-gray-800 text-sm">
                       {children}
                     </td>
                   ),
@@ -213,13 +228,13 @@ export function ChatMessage({
                     <em className="text-gray-900 font-medium italic">{children}</em>
                   ),
                   h1: ({ children }) => (
-                    <h1 className="text-2xl font-bold text-gray-900 mt-6 mb-3 first:mt-0 border-b border-gray-300 pb-2">{children}</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 mt-6 mb-4 first:mt-0 border-b-2 border-gray-300 pb-2">{children}</h1>
                   ),
                   h2: ({ children }) => (
                     <h2 className="text-xl font-bold text-gray-900 mt-5 mb-3 first:mt-0 border-b border-gray-200 pb-1.5">{children}</h2>
                   ),
                   h3: ({ children }) => (
-                    <h3 className="text-lg font-bold text-gray-900 mt-4 mb-2 first:mt-0">{children}</h3>
+                    <h3 className="text-lg font-bold text-gray-800 mt-4 mb-3 first:mt-0">{children}</h3>
                   ),
                   h4: ({ children }) => (
                     <h4 className="text-base font-bold text-gray-900 mt-3 mb-2 first:mt-0">{children}</h4>
