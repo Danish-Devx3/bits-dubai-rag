@@ -234,77 +234,28 @@ Respond with JSON only, no additional text.`;
     // Check if user wants table format
     const wantsTable = query.toLowerCase().includes('table') || 
                        query.toLowerCase().includes('tabular') ||
-                       query.toLowerCase().includes('in table');
+                       query.toLowerCase().includes('in tabular');
 
-    // Build format-specific instructions
-    let formatInstructions = '';
-    let exampleOutput = '';
-
+    // Build a more concise prompt to avoid 422 errors
     if (wantsTable) {
-      formatInstructions = `CRITICAL: The user explicitly requested TABLE FORMAT. You MUST create a markdown table.
+      return `User asked: "${query}"
 
-Create a table with columns like: Course Code | Course Name | Semester | Mid-Sem | Final | Total | GPA | Status
-Use proper markdown table syntax with | separators and header row.`;
-      
-      exampleOutput = `Example table format:
-| Course Code | Course Name | Semester | Mid-Sem | Final | Total | GPA | Status |
-|-------------|-------------|----------|---------|-------|-------|-----|--------|
-| CS F213 | Object Oriented Programming | FIRST SEMESTER 2024-2025 | 75 (C) | 78 (C) | 76.5 | 6.0 | completed |
-| CS F214 | Logic in Computer Science | FIRST SEMESTER 2024-2025 | 85 (B) | 88 (B) | 86.5 | 8.0 | completed |`;
-    } else {
-      formatInstructions = `Format as a well-structured markdown document with:
-- Clear headings (##, ###)
-- Organized sections (group by semester)
-- Bullet points or lists
-- Bold text for important info
-- Proper spacing and line breaks`;
-      
-      exampleOutput = `Example format:
-## Your Academic Grades
+Format this JSON data as a markdown table. Create columns: Course Code | Course Name | Semester | Mid-Sem | Final | Total | GPA | Status
 
-### Current Semester (2025-2026)
-
-**CS F301: Principles of Programming Languages**
-- Status: In Progress
-- Grades: Not yet available
-
-### Previous Semester (2024-2025)
-
-**CS F213: Object Oriented Programming**
-- Mid-Semester: 75 (Grade: C)
-- Final: 78 (Grade: C)
-- Total: 76.5
-- GPA: 6.0
-- Status: Completed`;
-    }
-
-    return `You are an AI assistant helping a student with their academic queries at BITS Dubai.
-
-USER QUERY: "${query}"
-
-RAW JSON DATA FROM DATABASE:
+JSON Data:
 ${rawDataJson}
 
-CRITICAL REQUIREMENTS:
-1. DO NOT output the raw JSON data as-is
-2. DO NOT output unformatted text
-3. YOU MUST format this data into a well-structured, readable response
-4. Parse the JSON structure and extract the relevant information
-5. Format based on user's request: ${wantsTable ? 'TABLE FORMAT' : 'STRUCTURED MARKDOWN'}
+Output ONLY the markdown table, nothing else.`;
+    }
 
-${formatInstructions}
+    return `User asked: "${query}"
 
-EXAMPLE OF EXPECTED OUTPUT:
-${exampleOutput}
+Format this JSON data with markdown (headings, lists, bold text). Group by semester.
 
-YOUR TASK:
-1. Parse the JSON data above
-2. Extract course information (courseCode, courseName, semester, grades, etc.)
-3. Format it exactly like the example above
-4. ${wantsTable ? 'Create a markdown table with all the data' : 'Create structured markdown with headings and lists'}
-5. Make it professional and easy to read
+JSON Data:
+${rawDataJson}
 
-IMPORTANT: Your response should ONLY contain the formatted output, not the raw JSON or any explanation. Start directly with the formatted content.`;
+Output formatted markdown only.`;
   }
 
   /**
@@ -346,12 +297,14 @@ IMPORTANT: Your response should ONLY contain the formatted output, not the raw J
 
     // Use bypass mode to format raw data into well-structured response
     const finalPrompt = this.buildFinalResponsePrompt(query, toolResults, queryType);
+    
     try {
+      // Try bypass mode first
       const finalApiResponse = await axios.post(
         `${this.lightragUrl}/query`,
         {
           query: finalPrompt,
-          mode: 'bypass', // Always use bypass mode for final formatted output
+          mode: 'bypass',
           top_k: 0,
           include_references: false,
         },
@@ -360,14 +313,72 @@ IMPORTANT: Your response should ONLY contain the formatted output, not the raw J
             'Content-Type': 'application/json',
             Authorization: `Bearer ${process.env.LIGHTRAG_TOKEN || ''}`,
           },
+          timeout: 30000, // 30 second timeout
         },
       );
-      return finalApiResponse.data.response || finalApiResponse.data.message || 'Unable to format response';
-    } catch (error) {
-      console.error('Bypass mode formatting failed:', error);
+      
+      const response = finalApiResponse.data.response || finalApiResponse.data.message;
+      if (response && response.trim()) {
+        return response;
+      }
+      
+      // If response is empty, fall back to manual formatting
+      return this.formatFallbackResponse(toolResults);
+    } catch (error: any) {
+      console.error('Bypass mode formatting failed:', error.response?.data || error.message);
+      
+      // If 422 error, try with simpler prompt or use fallback
+      if (error.response?.status === 422) {
+        console.log('422 error - trying with simplified prompt');
+        try {
+          // Try with a simpler, shorter prompt
+          const simplePrompt = this.buildSimplePrompt(query, toolResults);
+          const simpleResponse = await axios.post(
+            `${this.lightragUrl}/query`,
+            {
+              query: simplePrompt,
+              mode: 'bypass',
+              top_k: 0,
+            },
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${process.env.LIGHTRAG_TOKEN || ''}`,
+              },
+            },
+          );
+          return simpleResponse.data.response || simpleResponse.data.message || this.formatFallbackResponse(toolResults);
+        } catch (simpleError) {
+          console.error('Simple prompt also failed:', simpleError);
+          return this.formatFallbackResponse(toolResults);
+        }
+      }
+      
       // Ultimate fallback - format manually
       return this.formatFallbackResponse(toolResults);
     }
+  }
+
+  /**
+   * Build simpler prompt for 422 error cases
+   */
+  private buildSimplePrompt(query: string, toolResults: any[]): string {
+    const rawDataArray = toolResults
+      .map((tr) => tr.rawData)
+      .filter(Boolean);
+    
+    const rawDataJson = rawDataArray.length === 1 
+      ? JSON.stringify(rawDataArray[0], null, 2)
+      : JSON.stringify(rawDataArray, null, 2);
+    
+    const wantsTable = query.toLowerCase().includes('table') || 
+                       query.toLowerCase().includes('tabular');
+    
+    if (wantsTable) {
+      return `Format this JSON data as a markdown table:\n\n${rawDataJson}\n\nCreate a table with columns: Course Code, Course Name, Semester, Mid-Sem, Final, Total, GPA, Status`;
+    }
+    
+    return `Format this JSON data nicely with markdown:\n\n${rawDataJson}\n\nUse headings, lists, and bold text.`;
   }
 
   /**
