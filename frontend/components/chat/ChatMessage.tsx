@@ -20,6 +20,10 @@ interface ChatMessageProps {
   onRetry?: () => void;
   recommendations?: string[];
   onRecommendationClick?: (query: string) => void;
+  metadata?: {
+    duration?: number;
+    durationFormatted?: string;
+  };
 }
 
 export function ChatMessage({ 
@@ -31,7 +35,8 @@ export function ChatMessage({
   canRetry = false,
   onRetry,
   recommendations = [],
-  onRecommendationClick
+  onRecommendationClick,
+  metadata
 }: ChatMessageProps) {
   const isUser = role === "user";
   
@@ -257,6 +262,15 @@ export function ChatMessage({
             </div>
           )}
           
+          {/* Metadata (timing) */}
+          {metadata && metadata.durationFormatted && !isUser && !isLoading && (
+            <div className="mt-2 pt-2 border-t border-gray-200">
+              <p className="text-xs text-gray-500 italic">
+                Generated in {metadata.durationFormatted}
+              </p>
+            </div>
+          )}
+
           {/* Recommendations */}
           {recommendations && recommendations.length > 0 && !isUser && (
             <div className="mt-4 pt-4 border-t border-gray-200">

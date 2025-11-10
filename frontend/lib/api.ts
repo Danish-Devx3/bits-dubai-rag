@@ -334,6 +334,8 @@ export const unifiedQueryApi = {
       const decoder = new TextDecoder();
       let buffer = "";
 
+      let metadata: any = null;
+      
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -347,9 +349,20 @@ export const unifiedQueryApi = {
           if (trimmed.startsWith("data: ")) {
             try {
               const dataStr = trimmed.slice(6);
-              if (dataStr === "[DONE]") return;
+              if (dataStr === "[DONE]") {
+                // Return metadata if available
+                if (metadata) {
+                  yield JSON.stringify({ type: 'metadata', ...metadata });
+                }
+                return;
+              }
               const parsed = JSON.parse(dataStr);
-              if (parsed.content) yield parsed.content;
+              if (parsed.content) {
+                yield parsed.content;
+              } else if (parsed.metadata) {
+                // Store metadata to return at the end
+                metadata = parsed.metadata;
+              }
             } catch (e) {
               // Skip invalid JSON
             }

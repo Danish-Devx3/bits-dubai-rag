@@ -264,11 +264,23 @@ export function ChatInterface({
       
       try {
         let chunkCount = 0;
+        let responseMetadata: any = null;
         // Try unified query first (for ERP/LMS), fallback to direct LightRAG
         const token = localStorage.getItem("access_token");
         if (token) {
           // Use unified query API (routes through backend for classification)
           for await (const chunk of unifiedQueryApi.queryStream(userMessage)) {
+            // Check if this is metadata
+            try {
+              const parsed = JSON.parse(chunk);
+              if (parsed.type === 'metadata') {
+                responseMetadata = parsed;
+                continue;
+              }
+            } catch (e) {
+              // Not JSON, treat as content
+            }
+            
             if (chunk && chunk.trim()) {
               chunkCount++;
               fullResponse += chunk;
@@ -316,7 +328,11 @@ export function ChatInterface({
                     ...msg, 
                     content: fullResponse.trim(), 
                     isLoading: false,
-                    recommendations: recommendations.length > 0 ? recommendations : undefined
+                    recommendations: recommendations.length > 0 ? recommendations : undefined,
+                    metadata: responseMetadata ? {
+                      duration: responseMetadata.duration,
+                      durationFormatted: responseMetadata.durationFormatted
+                    } : undefined
                   }
                 : msg
             )
