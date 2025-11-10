@@ -5,6 +5,8 @@ import { User, Bot, Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/Button";
 
@@ -136,6 +138,7 @@ export function ChatMessage({
             <div className="markdown-content">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkBreaks]}
+                rehypePlugins={[rehypeRaw, rehypeSanitize]}
                 components={{
                   p: ({ children }) => {
                     // Don't render empty paragraphs
@@ -181,28 +184,30 @@ export function ChatMessage({
                     </pre>
                   ),
                   table: ({ children }) => (
-                    <div className="overflow-x-auto my-4">
-                      <table className="min-w-full border-collapse border border-gray-400 text-sm">
+                    <div className="overflow-x-auto my-4 -mx-2 px-2">
+                      <table className="min-w-full border-collapse border border-gray-300 text-sm bg-white rounded-lg shadow-sm">
                         {children}
                       </table>
                     </div>
                   ),
                   thead: ({ children }) => (
-                    <thead className="bg-gray-200">{children}</thead>
+                    <thead className="bg-gray-100">{children}</thead>
                   ),
                   tbody: ({ children }) => (
-                    <tbody>{children}</tbody>
+                    <tbody className="divide-y divide-gray-200">{children}</tbody>
                   ),
                   tr: ({ children }) => (
-                    <tr className="border-b border-gray-300">{children}</tr>
+                    <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                      {children}
+                    </tr>
                   ),
                   th: ({ children }) => (
-                    <th className="border border-gray-400 px-3 py-2 text-left font-bold text-gray-900 bg-gray-200">
+                    <th className="border border-gray-300 px-4 py-3 text-left font-bold text-gray-900 bg-gray-100 text-xs uppercase tracking-wider whitespace-nowrap">
                       {children}
                     </th>
                   ),
                   td: ({ children }) => (
-                    <td className="border border-gray-400 px-3 py-2 text-gray-900">
+                    <td className="border border-gray-300 px-4 py-2.5 text-gray-800 text-sm">
                       {children}
                     </td>
                   ),
