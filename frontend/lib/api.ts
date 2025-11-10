@@ -20,6 +20,7 @@ export const backendApi = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true, // Enable cookies for HttpOnly authentication
 });
 
 // Add tokens to requests
@@ -31,13 +32,8 @@ lightragApi.interceptors.request.use((config) => {
   return config;
 });
 
-backendApi.interceptors.request.use((config) => {
-  const token = localStorage.getItem("access_token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// Backend API now uses HttpOnly cookies, no need to add Authorization header
+// Cookies are automatically sent with withCredentials: true
 
 // ========== LightRAG Query API (for document-based queries) ==========
 export const queryApi = {
@@ -204,8 +200,8 @@ export const documentApi = {
 export const authApi = {
   login: async (email: string, password: string) => {
     const response = await backendApi.post("/auth/login", { email, password });
-    if (response.data.access_token) {
-      localStorage.setItem("access_token", response.data.access_token);
+    // Token is now stored in HttpOnly cookie, only store user data
+    if (response.data.user) {
       localStorage.setItem("user", JSON.stringify(response.data.user));
     }
     return response.data;
@@ -213,12 +209,25 @@ export const authApi = {
 
   getProfile: async () => {
     const response = await backendApi.get("/auth/me");
+    // Update stored user data
+    if (response.data) {
+      localStorage.setItem("user", JSON.stringify(response.data));
+    }
     return response.data;
   },
 
-  logout: () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("user");
+  logout: async () => {
+    try {
+      // Call backend logout endpoint to clear cookie
+      await backendApi.post("/auth/logout");
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      // Clear local storage
+      localStorage.removeItem("user");
+      localStorage.removeItem("userType");
+      localStorage.removeItem("userEmail");
+    }
   },
 };
 

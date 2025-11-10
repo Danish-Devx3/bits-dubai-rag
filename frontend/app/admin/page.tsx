@@ -13,14 +13,27 @@ export default function AdminPage() {
   const [showUpload, setShowUpload] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    const userType = localStorage.getItem("userType");
-    
-    // For admin, we check both token and userType
-    // Note: Admin authentication can be added to backend later
-    if (!token || userType !== "admin") {
-      router.push("/login");
-    }
+    const checkAuth = async () => {
+      try {
+        const userData = localStorage.getItem("user");
+        const userType = localStorage.getItem("userType");
+        
+        if (!userData || userType !== "admin") {
+          router.push("/login");
+          return;
+        }
+
+        // Verify authentication by calling /auth/me
+        const profile = await authApi.getProfile();
+        if (!profile || profile.role !== "admin") {
+          router.push("/login");
+        }
+      } catch (error) {
+        // Not authenticated, redirect to login
+        router.push("/login");
+      }
+    };
+    checkAuth();
   }, [router]);
 
   const handleLogout = () => {

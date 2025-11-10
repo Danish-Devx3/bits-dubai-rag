@@ -18,13 +18,27 @@ export default function LoginPage() {
 
   // Check if already logged in
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    const userData = localStorage.getItem("user");
-    const storedUserType = localStorage.getItem("userType");
-    
-    if (token && userData && storedUserType) {
-      router.push(storedUserType === "admin" ? "/admin" : "/student");
-    }
+    const checkAuth = async () => {
+      try {
+        const userData = localStorage.getItem("user");
+        if (userData) {
+          // Verify token is still valid by calling /auth/me
+          const profile = await authApi.getProfile();
+          if (profile) {
+            const storedUserType = localStorage.getItem("userType");
+            if (storedUserType) {
+              router.push(storedUserType === "admin" ? "/admin" : "/student");
+            }
+          }
+        }
+      } catch (error) {
+        // Not authenticated, clear storage
+        localStorage.removeItem("user");
+        localStorage.removeItem("userType");
+        localStorage.removeItem("userEmail");
+      }
+    };
+    checkAuth();
   }, [router]);
 
   const handleUserTypeSelect = (type: "admin" | "student") => {
@@ -43,16 +57,15 @@ export default function LoginPage() {
       // Call backend API for authentication
       const response = await authApi.login(email, password);
       
-      if (response.access_token && response.user) {
+      if (response.user) {
         // Determine user type from backend response (role field)
         const userRole = response.user.role || (userType || "student");
         const determinedUserType = userRole === "admin" ? "admin" : "student";
         
-        // Store authentication data
+        // Store authentication data (token is in HttpOnly cookie)
         localStorage.setItem("userType", determinedUserType);
         localStorage.setItem("userEmail", email);
-        
-        // Token and user are already stored by authApi.login()
+        // User data is already stored by authApi.login()
         
         // Redirect based on user type
         router.push(determinedUserType === "admin" ? "/admin" : "/student");

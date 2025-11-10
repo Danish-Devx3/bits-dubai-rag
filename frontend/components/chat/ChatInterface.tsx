@@ -270,8 +270,8 @@ export function ChatInterface({
         let chunkCount = 0;
         let responseMetadata: any = null;
         // Try unified query first (for ERP/LMS), fallback to direct LightRAG
-        const token = localStorage.getItem("access_token");
-        if (token) {
+        const user = localStorage.getItem("user");
+        if (user) {
           // Use unified query API (routes through backend for classification)
           for await (const chunk of unifiedQueryApi.queryStream(userMessage)) {
             // Check if this is metadata

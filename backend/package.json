@@ -27,6 +27,7 @@
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "cookie-parser": "^1.4.7",
     "mongodb": "^7.0.0",
     "ollama": "^0.6.2",
     "passport": "^0.7.0",
@@ -35,6 +36,7 @@
   "devDependencies": {
     "@nestjs/cli": "^11.0.10",
     "@types/bcrypt": "^6.0.0",
+    "@types/cookie-parser": "^1.4.10",
     "@types/node": "^24.10.0",
     "@types/passport-jwt": "^4.0.1",
     "prisma": "^6.19.0",

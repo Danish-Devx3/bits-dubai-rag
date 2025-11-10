@@ -14,21 +14,31 @@ export default function StudentPage() {
   const [showDashboard, setShowDashboard] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    const userType = localStorage.getItem("userType");
-    const userData = localStorage.getItem("user");
-    
-    if (!token || userType !== "student") {
-      router.push("/login");
-      return;
-    }
+    const checkAuth = async () => {
+      try {
+        const userData = localStorage.getItem("user");
+        const userType = localStorage.getItem("userType");
+        
+        if (!userData || userType !== "student") {
+          router.push("/login");
+          return;
+        }
 
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-
-    // Load academic summary
-    loadSummary();
+        // Verify authentication by calling /auth/me
+        const profile = await authApi.getProfile();
+        if (profile && profile.role === "student") {
+          setUser(profile);
+          // Load academic summary
+          loadSummary();
+        } else {
+          router.push("/login");
+        }
+      } catch (error) {
+        // Not authenticated, redirect to login
+        router.push("/login");
+      }
+    };
+    checkAuth();
   }, [router]);
 
   const loadSummary = async () => {
