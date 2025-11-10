@@ -118,6 +118,213 @@ export class LlmWithToolsService {
   }
 
   /**
+   * Generate streaming response with tool calling support
+   * 
+   * Flow:
+   * 1. Send query + tool definitions to LLM
+   * 2. LLM decides which tools to call
+   * 3. Execute tools and get data
+   * 4. Stream final response from LLM
+   */
+  async *generateStreamingResponseWithTools(
+    query: string,
+    studentId: string,
+    queryType: QueryType,
+    conversationHistory?: Array<{ role: string; content: string }>,
+  ): AsyncGenerator<string, void, unknown> {
+    try {
+      // Get available tools
+      const tools = this.mcpToolsService.getAvailableTools();
+
+      // Step 1: Send query with tool definitions to LLM (non-streaming for tool selection)
+      const toolSelectionPrompt = this.buildToolSelectionPrompt(query, tools, queryType);
+      
+      const toolSelectionResponse = await axios.post(
+        `${this.lightragUrl}/query`,
+        {
+          query: toolSelectionPrompt,
+          mode: 'bypass',
+          include_references: false,
+          conversation_history: conversationHistory,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${process.env.LIGHTRAG_TOKEN || ''}`,
+          },
+        },
+      );
+
+      // Step 2: Parse LLM's tool selection
+      const toolCalls = this.parseToolCalls(
+        toolSelectionResponse.data.response || toolSelectionResponse.data.message,
+        tools,
+      );
+
+      // Step 3: Execute tools and collect data
+      const toolResults: any[] = [];
+      for (const toolCall of toolCalls) {
+        try {
+          const result = await this.mcpToolsService.executeTool(
+            toolCall.name,
+            toolCall.parameters,
+            studentId,
+          );
+          
+          toolResults.push({
+            tool: toolCall.name,
+            rawData: result,
+          });
+        } catch (error: any) {
+          toolResults.push({
+            tool: toolCall.name,
+            error: error.message,
+          });
+        }
+      }
+
+      // Step 4: Stream final response using bypass mode
+      const finalPrompt = this.buildFinalResponsePrompt(query, toolResults, queryType);
+      
+      // Use streaming endpoint for final response
+      const streamResponse = await axios.post(
+        `${this.lightragUrl}/query/stream`,
+        {
+          query: finalPrompt,
+          mode: 'bypass',
+          stream: true,
+          conversation_history: conversationHistory,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${process.env.LIGHTRAG_TOKEN || ''}`,
+          },
+          responseType: 'stream',
+        },
+      );
+
+      // Stream the response
+      for await (const chunk of this.streamResponse(streamResponse.data)) {
+        yield chunk;
+      }
+    } catch (error: any) {
+      console.error('LLM with tools streaming error:', error.response?.data || error.message);
+      // Fallback: try to use tools directly
+      for await (const chunk of this.fallbackToolExecutionStream(query, studentId, queryType)) {
+        yield chunk;
+      }
+    }
+  }
+
+  /**
+   * Stream response from LightRAG API
+   */
+  private async* streamResponse(stream: any): AsyncGenerator<string, void, unknown> {
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    for await (const chunk of stream) {
+      buffer += decoder.decode(chunk, { stream: true });
+
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
+
+        try {
+          const dataStr = trimmedLine.slice(6);
+          if (dataStr === '[DONE]' || dataStr === 'null') {
+            return;
+          }
+          const parsed = JSON.parse(dataStr);
+          if (parsed.content) {
+            yield parsed.content;
+          } else if (parsed.response) {
+            yield parsed.response;
+          }
+          if (parsed.done === true) {
+            return;
+          }
+        } catch (e) {
+          // Skip invalid JSON
+        }
+      }
+    }
+  }
+
+  /**
+   * Fallback: execute tools directly and stream response
+   */
+  private async* fallbackToolExecutionStream(
+    query: string,
+    studentId: string,
+    queryType: QueryType,
+  ): AsyncGenerator<string, void, unknown> {
+    const tools = this.mcpToolsService.getAvailableTools();
+    const suggestedTools = this.suggestToolsFromQuery(query, tools);
+
+    if (suggestedTools.length === 0) {
+      yield 'I apologize, but I couldn\'t process your query. Please try rephrasing your question.';
+      return;
+    }
+
+    const toolResults: any[] = [];
+    for (const toolCall of suggestedTools) {
+      try {
+        const result = await this.mcpToolsService.executeTool(
+          toolCall.name,
+          toolCall.parameters,
+          studentId,
+        );
+        toolResults.push({
+          tool: toolCall.name,
+          rawData: result,
+        });
+      } catch (error: any) {
+        console.error(`Tool ${toolCall.name} error:`, error);
+        toolResults.push({
+          tool: toolCall.name,
+          error: error.message,
+        });
+      }
+    }
+
+    // Stream final response
+    const finalPrompt = this.buildFinalResponsePrompt(query, toolResults, queryType);
+    try {
+      const streamResponse = await axios.post(
+        `${this.lightragUrl}/query/stream`,
+        {
+          query: finalPrompt,
+          mode: 'bypass',
+          stream: true,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${process.env.LIGHTRAG_TOKEN || ''}`,
+          },
+          responseType: 'stream',
+        },
+      );
+
+      for await (const chunk of this.streamResponse(streamResponse.data)) {
+        yield chunk;
+      }
+    } catch (error) {
+      console.error('Bypass mode streaming failed:', error);
+      // Ultimate fallback - format manually
+      const formatted = this.formatFallbackResponse(toolResults);
+      for (const char of formatted) {
+        yield char;
+      }
+    }
+  }
+
+  /**
    * Build prompt for tool selection
    */
   private buildToolSelectionPrompt(

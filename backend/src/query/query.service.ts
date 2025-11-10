@@ -204,5 +204,119 @@ export class QueryService {
 
     return recommendations.slice(0, 5); // Return top 5 recommendations
   }
+
+  /**
+   * Process query with streaming support
+   */
+  async *processQueryStream(
+    query: string,
+    studentId?: string,
+  ): AsyncGenerator<string, void, unknown> {
+    const queryType = this.classificationService.classifyQuery(query);
+    const semester = this.classificationService.extractSemester(query);
+    const courseCode = this.classificationService.extractCourseCode(query);
+    const department = this.classificationService.extractDepartment(query);
+
+    let contextData: any = {};
+
+    // Fetch relevant data based on query type
+    if (queryType === QueryType.PUBLIC || queryType === QueryType.MIXED) {
+      // Public data
+      if (query.toLowerCase().includes('open electives')) {
+        contextData.openElectives = await this.publicDataService.getOpenElectives(semester);
+      }
+      if (query.toLowerCase().includes('midsem')) {
+        contextData.midsemDates = await this.publicDataService.getMidsemDates(semester);
+      }
+      if (query.toLowerCase().includes('timetable') || query.toLowerCase().includes('schedule')) {
+        contextData.timetable = await this.publicDataService.getCourseTimetable(
+          courseCode,
+          department,
+        );
+      }
+      if (query.toLowerCase().includes('gpa') && query.toLowerCase().includes('calculation')) {
+        contextData.gpaRules = this.publicDataService.getGpaCalculationRules();
+      }
+      if (query.toLowerCase().includes('credit system')) {
+        contextData.creditSystem = this.publicDataService.getCreditSystemInfo();
+      }
+      if (query.toLowerCase().includes('announcement')) {
+        contextData.announcements = this.publicDataService.getAnnouncementLocations();
+      }
+      if (query.toLowerCase().includes('calendar')) {
+        contextData.calendar = await this.publicDataService.getAcademicCalendar(semester);
+      }
+    }
+
+    if (queryType === QueryType.PRIVATE || queryType === QueryType.MIXED) {
+      if (!studentId) {
+        yield JSON.stringify({
+          error: 'Authentication required for private queries',
+          queryType,
+        });
+        return;
+      }
+
+      // Use MCP tools for private queries with streaming
+      if (this.useMcpTools && (queryType === QueryType.PRIVATE || queryType === QueryType.MIXED)) {
+        // Stream response using MCP tools
+        for await (const chunk of this.llmWithToolsService.generateStreamingResponseWithTools(
+          query,
+          studentId,
+          queryType,
+        )) {
+          yield chunk;
+        }
+        return;
+      }
+
+      // Fallback to keyword-based approach (legacy)
+      // Private data
+      if (
+        query.toLowerCase().includes('grade') ||
+        query.toLowerCase().includes('gpa') ||
+        query.toLowerCase().includes('marks')
+      ) {
+        contextData.grades = await this.studentService.getStudentGrades(studentId, semester);
+      }
+      if (query.toLowerCase().includes('payment') || query.toLowerCase().includes('fee')) {
+        contextData.payments = await this.studentService.getStudentPayments(studentId, semester);
+      }
+      if (query.toLowerCase().includes('course') && query.toLowerCase().includes('enrolled')) {
+        contextData.enrollments = await this.studentService.getEnrolledCourses(
+          studentId,
+          semester,
+        );
+      }
+      if (query.toLowerCase().includes('attendance')) {
+        contextData.attendance = await this.studentService.getAttendance(
+          studentId,
+          courseCode ? undefined : undefined,
+        );
+      }
+      if (query.toLowerCase().includes('summary') || query.toLowerCase().includes('academic')) {
+        contextData.summary = await this.studentService.getAcademicSummary(studentId);
+      }
+    }
+
+    // Check if we have any context data
+    const hasContext = Object.keys(contextData).length > 0 && 
+      Object.values(contextData).some((value: any) => {
+        if (Array.isArray(value)) return value.length > 0;
+        if (typeof value === 'object' && value !== null) return Object.keys(value).length > 0;
+        return value !== null && value !== undefined && value !== '';
+      });
+
+    // Stream LLM response with context or bypass mode
+    for await (const chunk of this.llmService.generateStreamingResponse(
+      query,
+      contextData,
+      queryType,
+      undefined,
+      !hasContext, // Use bypass mode if no context
+    )) {
+      yield chunk;
+    }
+  }
 }
 

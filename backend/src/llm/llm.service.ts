@@ -126,15 +126,17 @@ export class LlmService {
     contextData: any,
     queryType: QueryType,
     conversationHistory?: Array<{ role: string; content: string }>,
+    useBypassMode: boolean = false,
   ): AsyncGenerator<string, void, unknown> {
     try {
       const enhancedQuery = this.buildEnhancedQuery(query, contextData, queryType);
+      const mode = useBypassMode ? 'bypass' : 'mix';
 
       const response = await axios.post(
         `${this.lightragUrl}/query/stream`,
         {
           query: enhancedQuery,
-          mode: 'mix',
+          mode: mode,
           stream: true,
           conversation_history: conversationHistory,
         },

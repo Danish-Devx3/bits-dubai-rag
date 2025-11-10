@@ -22,23 +22,25 @@ export class QueryController {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
 
     try {
-      const result = await this.queryService.processQuery(body.query, req.user.id);
-      
-      // Stream the response
-      if (result.response) {
-        // Send response in chunks for streaming effect
-        const chunks = result.response.match(/.{1,50}/g) || [result.response];
-        for (const chunk of chunks) {
-          res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
-        }
+      // Stream response chunks in real-time
+      for await (const chunk of this.queryService.processQueryStream(
+        body.query,
+        req.user.id,
+      )) {
+        // Send each chunk as it arrives
+        res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
       }
       
+      // Signal completion
       res.write(`data: [DONE]\n\n`);
       res.end();
     } catch (error: any) {
+      console.error('Stream error:', error);
       res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+      res.write(`data: [DONE]\n\n`);
       res.end();
     }
   }
