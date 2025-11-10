@@ -350,9 +350,9 @@ export function ChatInterface({
         console.warn("Streaming failed, falling back to regular query:", streamError);
         // Fallback to regular query API
         try {
-          const token = localStorage.getItem("access_token");
+          const user = localStorage.getItem("user");
           let response;
-          if (token) {
+          if (user) {
             // Use unified query API
             response = await unifiedQueryApi.query(userMessage);
             if (response && response.response) {
