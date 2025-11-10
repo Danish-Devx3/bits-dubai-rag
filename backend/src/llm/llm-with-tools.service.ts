@@ -76,15 +76,10 @@ export class LlmWithToolsService {
             studentId,
           );
           
-          const formattedResult = this.mcpToolsService.formatToolResponse(
-            toolCall.name,
-            result,
-          );
-          
+          // Store raw data - we'll format it with bypass mode later
           toolResults.push({
             tool: toolCall.name,
-            result: formattedResult,
-            rawData: result,
+            rawData: result, // Keep raw data for LLM to format
           });
         } catch (error: any) {
           toolResults.push({
@@ -94,14 +89,14 @@ export class LlmWithToolsService {
         }
       }
 
-      // Step 4: Generate final response with tool results using bypass mode for well-structured output
+      // Step 4: Use bypass mode to format raw data into well-structured response
       const finalPrompt = this.buildFinalResponsePrompt(query, toolResults, queryType);
       
       const finalResponse = await axios.post(
         `${this.lightragUrl}/query`,
         {
           query: finalPrompt,
-          mode: 'bypass', // Use bypass mode for well-structured, formatted output
+          mode: 'bypass', // Always use bypass mode for final formatted output
           top_k: 0, // No retrieval in bypass mode
           include_references: false,
           conversation_history: conversationHistory,
@@ -214,42 +209,55 @@ Respond with JSON only, no additional text.`;
   }
 
   /**
-   * Build final prompt with tool results for well-structured output
+   * Build final prompt with raw data for bypass mode formatting
    */
   private buildFinalResponsePrompt(
     query: string,
     toolResults: any[],
     queryType: QueryType,
   ): string {
-    const toolData = toolResults
+    // Extract raw data from tool results
+    const rawDataArray = toolResults
       .map((tr) => {
         if (tr.error) {
-          return `Tool ${tr.tool} error: ${tr.error}`;
+          return null;
         }
-        return `Data from ${tr.tool}:\n${tr.result}`;
+        return tr.rawData;
       })
-      .join('\n\n');
+      .filter(Boolean);
+
+    // Format raw data as JSON for LLM to parse
+    const rawDataJson = rawDataArray.length === 1 
+      ? JSON.stringify(rawDataArray[0], null, 2)
+      : JSON.stringify(rawDataArray, null, 2);
 
     return `You are an AI assistant helping a student with their academic queries at BITS Dubai.
 
 The user asked: "${query}"
 
-Here is the raw data retrieved from the student's records:
-${toolData}
+Here is the raw JSON data retrieved from the student's records:
+${rawDataJson}
 
-IMPORTANT: Transform this raw data into a well-structured, professional, and easy-to-read response.
+IMPORTANT INSTRUCTIONS:
+1. Parse the JSON data structure carefully
+2. Transform this raw data into a well-structured, professional response
+3. Format the response based on how the user asked (they may want table, list, summary, etc.)
+4. Use proper markdown formatting (headings, lists, bold text, spacing)
+5. Be conversational and helpful
+6. Organize information logically (group by semester, course, etc.)
+7. Make it easy to read and scan
 
-FORMATTING REQUIREMENTS:
-- Use clear markdown headings (##, ###) to organize sections
-- Format lists using proper markdown list syntax
-- Use bold text (**text**) for important information like course codes, grades, and statuses
-- Group related information together (e.g., current semester vs previous semester)
-- Add proper spacing and line breaks for readability
-- Be conversational and helpful, not just a data dump
-- Highlight key information (GPA, status, important dates)
-- Use tables or structured lists where appropriate
+FORMATTING GUIDELINES:
+- Use markdown headings (##, ###) for sections
+- Use lists with proper spacing
+- Use bold (**text**) for important info (course codes, grades, statuses)
+- Add proper line breaks between sections
+- Group related information together
+- If user asked for table format, create a markdown table
+- If user asked for summary, provide a concise overview
+- Adapt to the user's query style and intent
 
-Please provide a helpful, personalized, and well-formatted response that presents the information clearly and professionally. Don't just repeat the raw data - format it nicely with proper markdown.`;
+Now format the provided JSON data into a well-structured response that answers the user's query clearly and professionally.`;
   }
 
   /**
@@ -275,27 +283,28 @@ Please provide a helpful, personalized, and well-formatted response that present
           toolCall.parameters,
           studentId,
         );
-        const formattedResult = this.mcpToolsService.formatToolResponse(
-          toolCall.name,
-          result,
-        );
+        // Store raw data - format with bypass mode later
         toolResults.push({
           tool: toolCall.name,
-          result: formattedResult,
+          rawData: result, // Keep raw data for LLM to format
         });
       } catch (error: any) {
         console.error(`Tool ${toolCall.name} error:`, error);
+        toolResults.push({
+          tool: toolCall.name,
+          error: error.message,
+        });
       }
     }
 
-    // Use bypass mode to format the response nicely
+    // Use bypass mode to format raw data into well-structured response
     const finalPrompt = this.buildFinalResponsePrompt(query, toolResults, queryType);
     try {
       const finalApiResponse = await axios.post(
         `${this.lightragUrl}/query`,
         {
           query: finalPrompt,
-          mode: 'bypass', // Use bypass mode for well-structured output
+          mode: 'bypass', // Always use bypass mode for final formatted output
           top_k: 0,
           include_references: false,
         },
@@ -306,11 +315,31 @@ Please provide a helpful, personalized, and well-formatted response that present
           },
         },
       );
-      return finalApiResponse.data.response || finalApiResponse.data.message || toolResults.map((tr) => tr.result).join('\n\n');
+      return finalApiResponse.data.response || finalApiResponse.data.message || 'Unable to format response';
     } catch (error) {
-      // Ultimate fallback - return raw formatted data
-      return toolResults.map((tr) => tr.result).join('\n\n');
+      console.error('Bypass mode formatting failed:', error);
+      // Ultimate fallback - format manually
+      return this.formatFallbackResponse(toolResults);
     }
+  }
+
+  /**
+   * Fallback formatter if bypass mode fails
+   */
+  private formatFallbackResponse(toolResults: any[]): string {
+    const formatted = toolResults
+      .map((tr) => {
+        if (tr.error) {
+          return `Error: ${tr.error}`;
+        }
+        if (tr.rawData) {
+          return this.mcpToolsService.formatToolResponse(tr.tool, tr.rawData);
+        }
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n\n');
+    return formatted || 'Unable to retrieve data';
   }
 }
 
