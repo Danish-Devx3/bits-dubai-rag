@@ -97,7 +97,7 @@ export class LlmWithToolsService {
         {
           query: finalPrompt,
           mode: 'bypass', // Always use bypass mode for final formatted output
-          top_k: 0, // No retrieval in bypass mode
+          // Don't set top_k for bypass mode - API requires >= 1 or omit it
           include_references: false,
           conversation_history: conversationHistory,
         },
