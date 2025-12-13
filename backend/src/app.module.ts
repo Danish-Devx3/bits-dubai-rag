@@ -7,6 +7,7 @@ import { QueryModule } from './query/query.module';
 import { LlmModule } from './llm/llm.module';
 import { DatabaseModule } from './database/database.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { QdrantModule } from './qdrant/qdrant.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { PrismaModule } from './prisma/prisma.module';
       isGlobal: true,
     }),
     PrismaModule,
+    QdrantModule,
     DatabaseModule,
     AuthModule,
     StudentModule,
@@ -22,5 +24,5 @@ import { PrismaModule } from './prisma/prisma.module';
     LlmModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }
 

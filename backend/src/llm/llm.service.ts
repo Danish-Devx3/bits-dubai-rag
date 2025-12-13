@@ -1,13 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import axios from 'axios';
+import { ConfigService } from '@nestjs/config';
+import { Ollama } from 'ollama';
+import { QdrantService } from '../qdrant/qdrant.service';
 import { QueryType } from '../query/query-classification.service';
 
 @Injectable()
 export class LlmService {
-  private lightragUrl: string;
+  private ollama: Ollama;
+  private embeddingModel: string;
+  private llmModel: string;
 
-  constructor() {
-    this.lightragUrl = process.env.LIGHTRAG_API_URL || 'http://localhost:9621';
+  constructor(
+    private configService: ConfigService,
+    private qdrantService: QdrantService,
+  ) {
+    this.ollama = new Ollama({
+      host: this.configService.get<string>('OLLAMA_BASE_URL') || 'http://localhost:11434',
+    });
+    this.embeddingModel = this.configService.get<string>('OLLAMA_EMBEDDING_MODEL') || 'bge-m3';
+    this.llmModel = this.configService.get<string>('OLLAMA_LLM_MODEL') || 'deepseekv3.2-cloud';
   }
 
   async generateResponse(
@@ -18,107 +29,61 @@ export class LlmService {
     useBypassMode: boolean = false,
   ): Promise<string> {
     try {
-      // Build enhanced query with context
-      const enhancedQuery = this.buildEnhancedQuery(query, contextData, queryType);
+      // 1. Get Embedding
+      const embeddingResponse = await this.ollama.embeddings({
+        model: this.embeddingModel,
+        prompt: query,
+      });
 
-      // Use bypass mode if no context available - this allows LLM to answer from its knowledge
-      const mode = useBypassMode ? 'bypass' : 'mix';
+      // 2. Search Vector DB (unless strictly bypass, but usually we want knowledge base anyway)
+      // If useBypassMode is true, it means we didn't find *structured* data, but we might still find vector data.
+      let unstructuredContext = '';
+      try {
+        const searchResults = await this.qdrantService.search(embeddingResponse.embedding);
+        unstructuredContext = searchResults
+          .map((res: any) => res.payload?.content)
+          .filter(Boolean)
+          .join('\n\n');
+      } catch (err) {
+        console.error('Vector search failed:', err);
+      }
 
-      // Call LightRAG API
-      const response = await axios.post(
-        `${this.lightragUrl}/query`,
-        {
-          query: enhancedQuery,
-          mode: mode,
-          // Don't set top_k for bypass mode (API requires >= 1), use 10 for other modes
-          ...(useBypassMode ? {} : { top_k: 10 }),
-          include_references: false,
-          conversation_history: conversationHistory,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${process.env.LIGHTRAG_TOKEN || ''}`,
-          },
-        },
-      );
+      // 3. Construct System Prompt
+      const contextString = this.formatContext(contextData);
 
-      let responseText = response.data.response || response.data.message || 'No response generated';
+      const systemMessage = `You are BITS Dubai GPT, an intelligent assistant for BITS Pilani Dubai Campus students.
       
-      // If using bypass mode and no context, add helpful message
-      if (useBypassMode) {
-        responseText = `I couldn't find specific information about "${query}" in the available documents. However, based on general knowledge:\n\n${responseText}\n\n**Note:** For accurate and up-to-date information, please try asking about specific topics like:\n- Academic calendar and exam dates\n- Course catalog and open electives\n- GPA calculation rules\n- Credit system information\n- Your personal academic records (if logged in)`;
-      }
+      Instructions:
+      - Answer the user's question based ONLY on the provided context.
+      - If the answer is not in the context, say you don't know, or provide general advice if safely possible.
+      - Be helpful, concise, and professional.
+      
+      ${unstructuredContext ? `### Knowledge Base Context:\n${unstructuredContext}\n` : ''}
+      
+      ${contextString ? `### Student/Structured Data:\n${contextString}\n` : ''}
+      `;
 
-      return responseText;
-    } catch (error: any) {
-      console.error('LightRAG API error:', error.response?.data || error.message);
-      // Fallback response
-      return this.generateFallbackResponse(query, contextData, queryType, useBypassMode);
+      const messages = [
+        { role: 'system', content: systemMessage },
+        ...(conversationHistory || []).map(msg => ({
+          role: msg.role as 'system' | 'user' | 'assistant', // Type assertion
+          content: msg.content
+        })),
+        { role: 'user', content: query }
+      ];
+
+      // 4. Generate
+      const response = await this.ollama.chat({
+        model: this.llmModel,
+        messages: messages,
+      });
+
+      return response.message.content;
+
+    } catch (error) {
+      console.error('LLM Generation Error:', error);
+      return this.generateFallbackResponse(query, contextData);
     }
-  }
-
-  private buildEnhancedQuery(
-    query: string,
-    contextData: any,
-    queryType: QueryType,
-  ): string {
-    let enhancedQuery = query;
-
-    // Add context hints for better RAG retrieval
-    if (queryType === QueryType.PRIVATE || queryType === QueryType.MIXED) {
-      if (contextData.grades && contextData.grades.length > 0) {
-        enhancedQuery += ` [Student Academic Records Available]`;
-      }
-      if (contextData.payments && contextData.payments.length > 0) {
-        enhancedQuery += ` [Payment Information Available]`;
-      }
-    }
-
-    if (queryType === QueryType.PUBLIC || queryType === QueryType.MIXED) {
-      if (contextData.openElectives && contextData.openElectives.length > 0) {
-        enhancedQuery += ` [Course Catalog Available]`;
-      }
-      if (contextData.midsemDates && contextData.midsemDates.length > 0) {
-        enhancedQuery += ` [Academic Calendar Available]`;
-      }
-    }
-
-    return enhancedQuery;
-  }
-
-  private generateFallbackResponse(
-    query: string,
-    contextData: any,
-    queryType: QueryType,
-    useBypassMode: boolean = false,
-  ): string {
-    // Simple fallback when LightRAG is not available
-    if (contextData.grades && contextData.grades.length > 0) {
-      return `Your grades for the requested semester:\n${contextData.grades
-        .map(
-          (g: any) =>
-            `- ${g.course?.courseCode || 'N/A'}: ${g.finalGrade || g.midSemGrade || 'In Progress'}`,
-        )
-        .join('\n')}`;
-    }
-
-    if (contextData.openElectives && contextData.openElectives.length > 0) {
-      return `Open electives available:\n${contextData.openElectives
-        .map((c: any) => `- ${c.courseCode}: ${c.courseName} (${c.credits} credits)`)
-        .join('\n')}`;
-    }
-
-    if (contextData.midsemDates && contextData.midsemDates.length > 0) {
-      const dates = contextData.midsemDates[0];
-      return `Mid-semester examinations are scheduled from ${dates.startDate} to ${dates.endDate}.`;
-    }
-
-    if (useBypassMode) {
-      return `I couldn't find specific information about "${query}" in the available documents. The information you're looking for may not be available in the current knowledge base.\n\nPlease try asking about:\n- Academic calendar and important dates\n- Course information and electives\n- Academic policies and rules\n- Your personal academic records (if logged in)`;
-    }
-
-    return 'I apologize, but I couldn\'t find the specific information you\'re looking for. Please try rephrasing your question or ask about topics like academic calendar, courses, or your academic records.';
   }
 
   async *generateStreamingResponse(
@@ -129,71 +94,76 @@ export class LlmService {
     useBypassMode: boolean = false,
   ): AsyncGenerator<string, void, unknown> {
     try {
-      const enhancedQuery = this.buildEnhancedQuery(query, contextData, queryType);
-      const mode = useBypassMode ? 'bypass' : 'mix';
+      // 1. Get Embedding
+      const embeddingResponse = await this.ollama.embeddings({
+        model: this.embeddingModel,
+        prompt: query,
+      });
 
-      const response = await axios.post(
-        `${this.lightragUrl}/query/stream`,
-        {
-          query: enhancedQuery,
-          mode: mode,
-          stream: true,
-          conversation_history: conversationHistory,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${process.env.LIGHTRAG_TOKEN || ''}`,
-          },
-          responseType: 'stream',
-        },
-      );
+      // 2. Search Vector DB
+      let unstructuredContext = '';
+      try {
+        const searchResults = await this.qdrantService.search(embeddingResponse.embedding);
+        unstructuredContext = searchResults
+          .map((res: any) => res.payload?.content)
+          .filter(Boolean)
+          .join('\n\n');
+      } catch (err) {
+        console.error('Vector search failed during stream:', err);
+      }
 
-      // Stream the response
-      for await (const chunk of this.streamResponse(response.data)) {
-        yield chunk;
+      // 3. Construct Prompt
+      const contextString = this.formatContext(contextData);
+
+      const systemMessage = `You are BITS Dubai GPT, an intelligent assistant for BITS Pilani Dubai Campus students.
+        
+        Instructions:
+        - Answer the user's question based ONLY on the provided context.
+        
+        ${unstructuredContext ? `### Knowledge Base Context:\n${unstructuredContext}\n` : ''}
+        
+        ${contextString ? `### Student/Structured Data:\n${contextString}\n` : ''}
+        `;
+
+      const messages = [
+        { role: 'system', content: systemMessage },
+        ...(conversationHistory || []).map(msg => ({
+          role: msg.role as 'system' | 'user' | 'assistant',
+          content: msg.content
+        })),
+        { role: 'user', content: query }
+      ];
+
+      // 4. Stream Response
+      const responseStream = await this.ollama.chat({
+        model: this.llmModel,
+        messages: messages,
+        stream: true,
+      });
+
+      for await (const chunk of responseStream) {
+        yield chunk.message.content;
       }
-    } catch (error: any) {
-      console.error('LightRAG streaming error:', error);
-      const fallback = this.generateFallbackResponse(query, contextData, queryType);
-      for (const char of fallback) {
-        yield char;
-      }
+
+    } catch (error) {
+      console.error('LLM Streaming Error:', error);
+      yield 'I apologize, but I encountered an error. Please try again later.';
     }
   }
 
-  private async* streamResponse(stream: any): AsyncGenerator<string, void, unknown> {
-    const decoder = new TextDecoder();
-    let buffer = '';
+  private formatContext(contextData: any): string {
+    if (!contextData || Object.keys(contextData).length === 0) return '';
 
-    for await (const chunk of stream) {
-      buffer += decoder.decode(chunk, { stream: true });
-
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        const trimmedLine = line.trim();
-        if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
-
-        try {
-          const dataStr = trimmedLine.slice(6);
-          if (dataStr === '[DONE]' || dataStr === 'null') {
-            return;
-          }
-          const parsed = JSON.parse(dataStr);
-          if (parsed.content) {
-            yield parsed.content;
-          } else if (parsed.response) {
-            yield parsed.response;
-          }
-          if (parsed.done === true) {
-            return;
-          }
-        } catch (e) {
-          // Skip invalid JSON
-        }
-      }
+    // Convert complex objects to readable strings
+    try {
+      return JSON.stringify(contextData, null, 2);
+    } catch {
+      return 'Error formatting context data';
     }
+  }
+
+  private generateFallbackResponse(query: string, contextData: any): string {
+    // Basic fallback logic
+    return "I'm sorry, I'm having trouble processing your request right now. Please try again.";
   }
 }
