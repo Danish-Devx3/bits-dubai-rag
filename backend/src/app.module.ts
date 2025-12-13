@@ -8,6 +8,7 @@ import { LlmModule } from './llm/llm.module';
 import { DatabaseModule } from './database/database.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QdrantModule } from './qdrant/qdrant.module';
+import { IngestionModule } from './ingestion/ingestion.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { QdrantModule } from './qdrant/qdrant.module';
     PublicDataModule,
     QueryModule,
     LlmModule,
+    IngestionModule,
   ],
 })
 export class AppModule { }

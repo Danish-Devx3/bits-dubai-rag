@@ -21,6 +21,14 @@ export class LlmService {
     this.llmModel = this.configService.get<string>('OLLAMA_LLM_MODEL') || 'deepseekv3.2-cloud';
   }
 
+  async getEmbedding(text: string): Promise<number[]> {
+    const response = await this.ollama.embeddings({
+      model: this.embeddingModel,
+      prompt: text,
+    });
+    return response.embedding;
+  }
+
   async generateResponse(
     query: string,
     contextData: any,

@@ -46,4 +46,24 @@ export class QdrantService implements OnModuleInit {
             return [];
         }
     }
+
+    async upsert(points: any[]) {
+        return this.client.upsert(this.collectionName, {
+            wait: true,
+            points: points,
+        });
+    }
+
+    async ensureCollection(vectorSize: number) {
+        const result = await this.client.getCollections();
+        const exists = result.collections.some(c => c.name === this.collectionName);
+        if (!exists) {
+            await this.client.createCollection(this.collectionName, {
+                vectors: {
+                    size: vectorSize,
+                    distance: 'Cosine',
+                },
+            });
+        }
+    }
 }

@@ -97,11 +97,11 @@ export const queryApi = {
           if (done) break;
 
           buffer += decoder.decode(value, { stream: true });
-          
+
           // Handle SSE format (data: {...})
           const lines = buffer.split("\n");
           buffer = lines.pop() || "";
-          
+
           for (const line of lines) {
             const trimmedLine = line.trim();
             if (!trimmedLine) continue;
@@ -137,12 +137,12 @@ export const queryApi = {
   },
 };
 
-// ========== Document Management API (LightRAG) ==========
+// ========== Document Management API (Backend Ingestion) ==========
 export const documentApi = {
   upload: async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
-    const response = await lightragApi.post("/documents/upload", formData, {
+    const response = await backendApi.post("/ingestion/upload", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -150,7 +150,13 @@ export const documentApi = {
     return response.data;
   },
 
+  // Note: Other methods (insertText, getStatus, etc.) might not be supported by new backend ingestion yet.
+  // For now, we only updated upload. The frontend status checking logic relies on getStatus.
+  // The backend currently only returns { success: true, ... }. It does not provide status tracking endpoints yet.
+  // So I also need to update DocumentUpload.tsx to handle the immediate success/failure response instead of polling.
+
   insertText: async (text: string, docId?: string, metadata?: Record<string, any>) => {
+    // Legacy support or implemented in backend? Assuming legacy or placeholder for now.
     const response = await lightragApi.post("/documents/text", {
       text,
       doc_id: docId,
@@ -160,9 +166,13 @@ export const documentApi = {
   },
 
   getStatus: async (docId: string) => {
+    // Backend doesn't support status tracking yet, so this might fail if called.
     const response = await lightragApi.get(`/documents/${docId}/status`);
     return response.data;
   },
+
+  // ... other methods ...
+
 
   getTrackStatus: async (trackId: string) => {
     const response = await lightragApi.get(`/documents/track_status/${trackId}`);
@@ -344,7 +354,7 @@ export const unifiedQueryApi = {
       let buffer = "";
 
       let metadata: any = null;
-      
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
