@@ -61,9 +61,7 @@ services:
   # The core API server.
   # ---------------------------------------------------------------------------
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ayaan27/bits-dubai-rag-backend:latest
     container_name: bits_backend
     restart: always
     ports:
@@ -75,7 +73,7 @@ services:
       - JWT_SECRET=dev-secret
       - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_EMBEDDING_MODEL=bge-m3
-      - OLLAMA_LLM_MODEL=deepseek-v3.1:671b-cloud
+      - OLLAMA_LLM_MODEL=llama3.2
       - QDRANT_URL=http://qdrant:6333
       - QDRANT_COLLECTION=bits_dubai_knowledge_base
     depends_on:
@@ -88,9 +86,7 @@ services:
   # The web user interface.
   # ---------------------------------------------------------------------------
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ayaan27/bits-dubai-rag-frontend:latest
     container_name: bits_frontend
     restart: always
     ports:
