@@ -2,16 +2,18 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Copy package files first for better caching
 COPY package*.json ./
-COPY prisma ./prisma/
 
 # Install dependencies
 RUN npm ci
 
-# Generate Prisma Client
-RUN npx prisma generate
-
+# Copy all source files including prisma schema
 COPY . .
+
+# Generate Prisma Client with the full schema
+# Using a dummy URL since prisma generate only needs the schema, not actual connection
+RUN DATABASE_URL="mongodb://localhost:27017/dummy" npx prisma generate
 
 # Build the application
 RUN npm run build
