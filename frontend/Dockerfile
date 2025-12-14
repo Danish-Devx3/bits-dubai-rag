@@ -2,6 +2,14 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Accept build arguments for NEXT_PUBLIC variables
+ARG NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
+ARG NEXT_PUBLIC_API_URL=http://localhost:9621
+
+# Set as environment variables during build
+ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 COPY package*.json ./
 RUN npm ci
 
@@ -11,7 +19,7 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./

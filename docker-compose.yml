@@ -92,7 +92,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:3001
+      - NEXT_PUBLIC_BACKEND_URL=http://3.92.146.237:3001
+      - NEXT_PUBLIC_API_URL=http://3.92.146.237:9621
     depends_on:
       - backend
 
