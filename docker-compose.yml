@@ -1,0 +1,106 @@
+services:
+  # ---------------------------------------------------------------------------
+  # Database: MongoDB
+  # Used for storing user data, metadata, and application state.
+  # ---------------------------------------------------------------------------
+  mongo:
+    image: mongo:latest
+    container_name: bits_mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  # ---------------------------------------------------------------------------
+  # Vector Database: Qdrant
+  # Used for storing vector embeddings for RAG.
+  # ---------------------------------------------------------------------------
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: bits_qdrant
+    restart: always
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  # ---------------------------------------------------------------------------
+  # LLM Provider: Ollama
+  # Hosts local LLMs and embedding models.
+  # ---------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: bits_ollama
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  # ---------------------------------------------------------------------------
+  # Ollama Model Puller
+  # Ephemeral service to pull models automatically on startup.
+  # ---------------------------------------------------------------------------
+  ollama-init:
+    image: curlimages/curl
+    container_name: bits_ollama_init
+    depends_on:
+      - ollama
+    command: >
+      sh -c "echo 'Waiting for Ollama to start...' &&
+             sleep 5 &&
+             echo 'Pulling bge-m3...' &&
+             curl -X POST http://ollama:11434/api/pull -d '{\"name\": \"bge-m3\"}' &&
+             echo 'Pulling llama3.2 (fallback)...' &&
+             curl -X POST http://ollama:11434/api/pull -d '{\"name\": \"llama3.2\"}' &&
+             echo 'Models pulled successfully!'"
+
+  # ---------------------------------------------------------------------------
+  # Backend: NestJS
+  # The core API server.
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bits_backend
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=mongodb://mongo:27017/bits-dubai
+      - PORT=3001
+      - FRONTEND_URL=http://localhost:3000
+      - JWT_SECRET=dev-secret
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_EMBEDDING_MODEL=bge-m3
+      - OLLAMA_LLM_MODEL=deepseek-v3.1:671b-cloud
+      - QDRANT_URL=http://qdrant:6333
+      - QDRANT_COLLECTION=bits_dubai_knowledge_base
+    depends_on:
+      - mongo
+      - qdrant
+      - ollama
+
+  # ---------------------------------------------------------------------------
+  # Frontend: Next.js
+  # The web user interface.
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bits_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:
+  qdrant_data:
+  ollama_data:
