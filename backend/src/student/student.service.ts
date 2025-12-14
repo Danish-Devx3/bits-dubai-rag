@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class StudentService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async getStudentGrades(studentId: string, semester?: string) {
     const where: any = { studentId };
@@ -73,6 +73,23 @@ export class StudentService {
   async getStudentProfile(studentId: string) {
     const student = await this.prisma.student.findUnique({
       where: { id: studentId },
+      include: {
+        enrollments: {
+          include: { course: true },
+          orderBy: { semester: 'desc' },
+        },
+        grades: {
+          include: { course: true },
+          orderBy: { semester: 'desc' },
+        },
+        payments: {
+          orderBy: { dueDate: 'desc' },
+        },
+        attendances: {
+          include: { course: true },
+          orderBy: { date: 'desc' },
+        },
+      },
     });
 
     if (!student) {
@@ -80,14 +97,22 @@ export class StudentService {
     }
 
     return {
-      id: student.id,
+      _id: student.id,
       studentId: student.studentId,
+      erpId: student.erpId,
       name: student.name,
       email: student.email,
       program: student.program,
+      campus: student.campus,
       gpa: student.gpa,
       cgpa: student.cgpa,
       status: student.status,
+      academicStatus: student.academicStatus,
+      practiceSchool: student.practiceSchool,
+      enrollments: student.enrollments,
+      grades: student.grades,
+      payments: student.payments,
+      attendance: student.attendances,
     };
   }
 

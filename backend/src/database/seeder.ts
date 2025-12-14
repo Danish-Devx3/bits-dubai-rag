@@ -56,24 +56,44 @@ export async function seedDatabase(prisma: PrismaClient) {
       {
         _id: student1Id,
         studentId: '2023A7PS0169U',
+        erpId: '21120230169',
         name: 'ANSH BANDI',
         email: 'ansh.bandi@dubai.bits-pilani.ac.in',
         password: hashedPassword,
-        program: 'Computer Science PS DUBAI',
-        gpa: 8.15,
+        program: 'B.E. Computer Science',
+        campus: 'Dubai, UAE',
+        gpa: 0.00, // Current semester in progress
         cgpa: 8.15,
         status: 'active',
+        academicStatus: 'Normal / Active',
+        practiceSchool: {
+          course: 'BITS F221',
+          station: 'Microsoft India Development Center',
+          supervisor: 'Dr. Rajesh Kumar',
+          grade: 'A',
+          units: 5.0,
+        },
       },
       {
         _id: student2Id,
         studentId: '2023A7PS0170U',
+        erpId: '21120230170',
         name: 'JOHN DOE',
         email: 'john.doe@dubai.bits-pilani.ac.in',
         password: hashedPassword,
-        program: 'Computer Science PS DUBAI',
-        gpa: 7.8,
+        program: 'B.E. Computer Science',
+        campus: 'Dubai, UAE',
+        gpa: 0.00, // Current semester in progress
         cgpa: 7.8,
         status: 'active',
+        academicStatus: 'Normal / Active',
+        practiceSchool: {
+          course: 'BITS F221',
+          station: 'Amazon Web Services',
+          supervisor: 'Prof. Anita Sharma',
+          grade: 'B+',
+          units: 5.0,
+        },
       },
       {
         _id: student3Id,
@@ -250,44 +270,88 @@ export async function seedDatabase(prisma: PrismaClient) {
 
     // Create Enrollments
     await db.collection('enrollments').insertMany([
+      // Ansh Bandi enrollments (student1Id)
       {
         studentId: student1Id,
-        courseId: course1Id,
+        courseId: course1Id, // CS F301
         semester: currentSemester,
         status: 'enrolled',
         enrolledAt: new Date(),
       },
       {
         studentId: student1Id,
-        courseId: course2Id,
+        courseId: course2Id, // CS F342
         semester: currentSemester,
         status: 'enrolled',
         enrolledAt: new Date(),
       },
       {
         studentId: student1Id,
-        courseId: course3Id,
+        courseId: course3Id, // CS F351
         semester: currentSemester,
         status: 'enrolled',
         enrolledAt: new Date(),
       },
       {
         studentId: student1Id,
-        courseId: course4Id,
+        courseId: course4Id, // CS F372
         semester: currentSemester,
         status: 'enrolled',
         enrolledAt: new Date(),
       },
       {
         studentId: student1Id,
-        courseId: course5Id,
+        courseId: course5Id, // BITS F464 Machine Learning
         semester: currentSemester,
         status: 'enrolled',
         enrolledAt: new Date(),
       },
       {
         studentId: student1Id,
-        courseId: course6Id,
+        courseId: course6Id, // GS F211
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      // John Doe enrollments (student2Id)
+      {
+        studentId: student2Id,
+        courseId: course1Id, // CS F301
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      {
+        studentId: student2Id,
+        courseId: course2Id, // CS F342
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      {
+        studentId: student2Id,
+        courseId: course3Id, // CS F351
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      {
+        studentId: student2Id,
+        courseId: course4Id, // CS F372
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      {
+        studentId: student2Id,
+        courseId: course9Id, // CS F415 Data Mining
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      {
+        studentId: student2Id,
+        courseId: course10Id, // PSY F111
         semester: currentSemester,
         status: 'enrolled',
         enrolledAt: new Date(),
@@ -391,39 +455,111 @@ export async function seedDatabase(prisma: PrismaClient) {
 
     // Create Grades
     await db.collection('grades').insertMany([
+      // Ansh Bandi current semester grades (in progress)
       {
         studentId: student1Id,
-        courseId: course1Id,
+        courseId: course1Id, // Principles of Programming Lang
         semester: currentSemester,
         status: 'in_progress',
       },
       {
         studentId: student1Id,
-        courseId: course2Id,
+        courseId: course2Id, // Computer Architecture
         semester: currentSemester,
         status: 'in_progress',
       },
       {
         studentId: student1Id,
-        courseId: course7Id,
-        semester: pastSemester,
-        midSemMarks: 75,
-        midSemGrade: 'C',
-        finalMarks: 78,
-        finalGrade: 'C',
-        totalMarks: 76.5,
-        gpa: 6.0,
+        courseId: course3Id, // Theory of Computation
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student1Id,
+        courseId: course4Id, // Operating Systems
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student1Id,
+        courseId: course5Id, // Machine Learning
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student1Id,
+        courseId: course6Id, // Modern Political Concepts
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      // Ansh Bandi historical grades (Year 2 Semester 1)
+      {
+        studentId: student1Id,
+        courseId: course7Id, // OOP - B+
+        semester: 'FIRST SEMESTER 2024-2025',
+        finalGrade: 'B+',
+        gpa: 8.0,
         status: 'completed',
       },
       {
         studentId: student1Id,
-        courseId: course8Id,
-        semester: pastSemester,
-        midSemMarks: 85,
-        midSemGrade: 'B',
-        finalMarks: 88,
+        courseId: course8Id, // Logic in CS - A-
+        semester: 'FIRST SEMESTER 2024-2025',
+        finalGrade: 'A-',
+        gpa: 9.0,
+        status: 'completed',
+      },
+      // John Doe current semester grades (in progress)
+      {
+        studentId: student2Id,
+        courseId: course1Id, // Principles of Programming Lang
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student2Id,
+        courseId: course2Id, // Computer Architecture
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student2Id,
+        courseId: course3Id, // Theory of Computation
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student2Id,
+        courseId: course4Id, // Operating Systems
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student2Id,
+        courseId: course9Id, // Data Mining
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student2Id,
+        courseId: course10Id, // Intro to Psychology
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      // John Doe historical grades (Year 2 Semester 1)
+      {
+        studentId: student2Id,
+        courseId: course7Id, // OOP - B
+        semester: 'FIRST SEMESTER 2024-2025',
         finalGrade: 'B',
-        totalMarks: 86.5,
+        gpa: 8.0,
+        status: 'completed',
+      },
+      {
+        studentId: student2Id,
+        courseId: course8Id, // Logic in CS - B+
+        semester: 'FIRST SEMESTER 2024-2025',
+        finalGrade: 'B+',
         gpa: 8.0,
         status: 'completed',
       },
@@ -539,19 +675,32 @@ export async function seedDatabase(prisma: PrismaClient) {
 
     // Create Payments
     await db.collection('payments').insertMany([
+      // Ansh Bandi payments (0.00 AED outstanding - cleared)
       {
         studentId: student1Id,
         semester: currentSemester,
-        amount: 150000,
+        amount: 28000,
         status: 'paid',
         dueDate: new Date('2025-08-15'),
         paidDate: new Date('2025-08-10'),
         paymentMethod: 'Online Transfer',
-        transactionId: 'TXN202508101234',
+        transactionId: 'TXN202508100169',
+        description: 'Tuition and Hostel Fees - First Semester 2025-2026 (Cleared)',
+      },
+      // John Doe payments (5,000 AED outstanding - Library Fee pending)
+      {
+        studentId: student2Id,
+        semester: currentSemester,
+        amount: 25000,
+        status: 'paid',
+        dueDate: new Date('2025-08-15'),
+        paidDate: new Date('2025-08-12'),
+        paymentMethod: 'Online Transfer',
+        transactionId: 'TXN202508120170',
         description: 'Tuition Fee - First Semester 2025-2026',
       },
       {
-        studentId: student1Id,
+        studentId: student2Id,
         semester: currentSemester,
         amount: 5000,
         status: 'pending',
@@ -692,27 +841,57 @@ export async function seedDatabase(prisma: PrismaClient) {
 
     // Create Attendance records
     const attendanceRecords = [];
-    const courseIds = [course1Id, course2Id, course5Id];
-    const dates = [
-      new Date('2025-11-05T14:50:00'),
-      new Date('2025-11-07T11:00:00'),
-      new Date('2025-11-12T14:50:00'),
-      new Date('2025-11-14T11:00:00'),
+
+    // Ansh Bandi attendance (avg 82.3%)
+    const anshCourses = [
+      { id: course2Id, attended: 46, total: 54 }, // Computer Architecture L4 - 85.2%
+      { id: course5Id, attended: 32, total: 38 }, // Machine Learning L1 - 84.2%
+      { id: course6Id, attended: 30, total: 39 }, // Modern Political Concepts - 76.9%
+      { id: course4Id, attended: 47, total: 57 }, // Operating Systems L4 - 82.5%
+      { id: course1Id, attended: 24, total: 28 }, // Principles of Prog Lang - 85.7%
+      { id: course3Id, attended: 41, total: 52 }, // Theory of Computation - 78.8%
     ];
 
-    for (const courseId of courseIds) {
-      for (const date of dates) {
-        const statuses = ['present', 'absent', 'present'];
-        const status = statuses[Math.floor(Math.random() * statuses.length)];
+    for (const course of anshCourses) {
+      for (let i = 0; i < course.total; i++) {
+        const date = new Date(2025, 8 + Math.floor(i / 20), 1 + (i % 28));
+        const status = i < course.attended ? 'present' : 'absent';
         attendanceRecords.push({
           studentId: student1Id,
-          courseId,
+          courseId: course.id,
           date,
-          startTime: new Date(date),
-          endTime: new Date(date.getTime() + 50 * 60000), // 50 minutes later
+          startTime: new Date(date.setHours(9, 0, 0)),
+          endTime: new Date(date.setHours(10, 0, 0)),
           status,
           points: status === 'present' ? 1 : 0,
-          remarks: status === 'present' ? 'Self-recorded' : 'auto record by system',
+          remarks: status === 'present' ? 'Present' : 'Absent',
+        });
+      }
+    }
+
+    // John Doe attendance (avg 75.8%)
+    const johnCourses = [
+      { id: course2Id, attended: 40, total: 54 }, // Computer Architecture L4 - 74.1%
+      { id: course9Id, attended: 30, total: 40 }, // Data Mining L1 - 75%
+      { id: course10Id, attended: 27, total: 35 }, // Intro to Psychology L1 - 77.1%
+      { id: course4Id, attended: 43, total: 57 }, // Operating Systems L4 - 75.4%
+      { id: course1Id, attended: 22, total: 28 }, // Principles of Prog Lang - 78.6%
+      { id: course3Id, attended: 39, total: 52 }, // Theory of Computation - 75%
+    ];
+
+    for (const course of johnCourses) {
+      for (let i = 0; i < course.total; i++) {
+        const date = new Date(2025, 8 + Math.floor(i / 20), 1 + (i % 28));
+        const status = i < course.attended ? 'present' : 'absent';
+        attendanceRecords.push({
+          studentId: student2Id,
+          courseId: course.id,
+          date,
+          startTime: new Date(date.setHours(9, 0, 0)),
+          endTime: new Date(date.setHours(10, 0, 0)),
+          status,
+          points: status === 'present' ? 1 : 0,
+          remarks: status === 'present' ? 'Present' : 'Absent',
         });
       }
     }

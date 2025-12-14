@@ -20,6 +20,10 @@ model Student {
   gpa       Float    @default(0)
   cgpa      Float    @default(0)
   status    String   @default("active")
+  erpId          String?
+  campus         String?
+  academicStatus String?
+  practiceSchool Json?
   
   enrollments Enrollment[]
   grades      Grade[]
