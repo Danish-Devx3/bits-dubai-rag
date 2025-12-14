@@ -16,7 +16,7 @@ export class QueryService {
     private studentService: StudentService,
     private llmService: LlmService,
     private llmWithToolsService: LlmWithToolsService,
-  ) {}
+  ) { }
 
   async processQuery(query: string, studentId?: string) {
     const queryType = this.classificationService.classifyQuery(query);
@@ -78,6 +78,8 @@ export class QueryService {
           context: { method: 'mcp_tools' }, // Indicates MCP tools were used
           hasContext: true,
           recommendations: [],
+          timetable: null,
+          contentType: 'text' as const,
         };
       }
 
@@ -111,7 +113,7 @@ export class QueryService {
     }
 
     // Check if we have any context data
-    const hasContext = Object.keys(contextData).length > 0 && 
+    const hasContext = Object.keys(contextData).length > 0 &&
       Object.values(contextData).some((value: any) => {
         if (Array.isArray(value)) return value.length > 0;
         if (typeof value === 'object' && value !== null) return Object.keys(value).length > 0;
@@ -120,17 +122,20 @@ export class QueryService {
 
     // Generate LLM response with context or bypass mode
     const response = await this.llmService.generateResponse(
-      query, 
-      contextData, 
+      query,
+      contextData,
       queryType,
       undefined,
       !hasContext, // Use bypass mode if no context
     );
 
     // Generate recommendations if no context found
-    const recommendations = !hasContext 
+    const recommendations = !hasContext
       ? this.generateRecommendations(query, queryType)
       : [];
+
+    // Check if this is a timetable query
+    const isTimetableQuery = contextData.timetable && contextData.timetable.length > 0;
 
     return {
       queryType,
@@ -138,6 +143,8 @@ export class QueryService {
       context: contextData, // For debugging
       hasContext,
       recommendations,
+      timetable: contextData.timetable || null,
+      contentType: isTimetableQuery ? 'timetable' as const : 'text' as const,
     };
   }
 
@@ -300,7 +307,7 @@ export class QueryService {
     }
 
     // Check if we have any context data
-    const hasContext = Object.keys(contextData).length > 0 && 
+    const hasContext = Object.keys(contextData).length > 0 &&
       Object.values(contextData).some((value: any) => {
         if (Array.isArray(value)) return value.length > 0;
         if (typeof value === 'object' && value !== null) return Object.keys(value).length > 0;
