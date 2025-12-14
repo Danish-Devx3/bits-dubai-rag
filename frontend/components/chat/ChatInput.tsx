@@ -32,7 +32,7 @@ export function ChatInput({
   };
 
   return (
-    <div className="border-t border-gray-200 bg-white">
+    <div className="border-t border-border bg-background transition-colors duration-300">
       <div className="max-w-3xl mx-auto px-4 py-4">
         <div className="flex gap-2 items-end">
           <div className="flex-1 relative">
@@ -43,13 +43,13 @@ export function ChatInput({
               onKeyDown={handleKeyPress}
               placeholder={placeholder}
               disabled={disabled}
-              className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-1 focus:ring-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 placeholder-gray-500 bg-white text-sm"
+              className="w-full px-4 py-3 pr-12 border border-border rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed text-foreground placeholder:text-muted-foreground bg-background text-sm"
             />
           </div>
           <button
             onClick={handleSend}
             disabled={disabled || !message.trim()}
-            className="p-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+            className="p-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
           >
             {disabled ? (
               <Loader2 className="w-4 h-4 animate-spin" />

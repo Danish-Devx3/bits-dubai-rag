@@ -130,22 +130,22 @@ export function DocumentUpload() {
       {/* Upload Area */}
       <div
         className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${isDragging
-            ? "border-blue-500 bg-blue-50"
-            : "border-gray-200 hover:border-gray-300 bg-gray-50/50"
+            ? "border-primary bg-primary/10"
+            : "border-border hover:border-primary/50 bg-secondary/30"
           }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
         <div className="flex flex-col items-center gap-3">
-          <div className="p-4 bg-white rounded-full shadow-sm">
-            <Upload className="w-6 h-6 text-blue-600" />
+          <div className="p-4 bg-card rounded-full shadow-sm">
+            <Upload className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h3 className="text-sm font-medium text-gray-900">
+            <h3 className="text-sm font-medium text-foreground">
               Click or drag files to upload
             </h3>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Supports PDF, TXT, MD (Max 10MB)
             </p>
           </div>
@@ -171,8 +171,8 @@ export function DocumentUpload() {
       {files.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-gray-900">Uploaded Files</h3>
-            <Button variant="ghost" size="sm" onClick={clearHistory} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+            <h3 className="text-sm font-medium text-foreground">Uploaded Files</h3>
+            <Button variant="ghost" size="sm" onClick={clearHistory} className="text-destructive hover:text-destructive hover:bg-destructive/10">
               <Trash2 className="w-4 h-4 mr-2" />
               Clear History
             </Button>
@@ -182,26 +182,26 @@ export function DocumentUpload() {
             {files.map((file) => (
               <div
                 key={file.id}
-                className="bg-white border border-gray-100 rounded-lg p-3 flex items-center justify-between shadow-sm"
+                className="bg-card border border-border rounded-lg p-3 flex items-center justify-between shadow-sm transition-colors duration-300"
               >
                 <div className="flex items-center gap-3 overflow-hidden">
-                  <div className={`p-2 rounded-lg flex-shrink-0 ${file.status === "completed" ? "bg-green-50" :
-                      file.status === "failed" ? "bg-red-50" : "bg-blue-50"
+                  <div className={`p-2 rounded-lg flex-shrink-0 transition-colors ${file.status === "completed" ? "bg-green-500/10" :
+                      file.status === "failed" ? "bg-destructive/10" : "bg-primary/10"
                     }`}>
-                    <FileText className={`w-4 h-4 ${file.status === "completed" ? "text-green-600" :
-                        file.status === "failed" ? "text-red-600" : "text-blue-600"
+                    <FileText className={`w-4 h-4 ${file.status === "completed" ? "text-green-600 dark:text-green-400" :
+                        file.status === "failed" ? "text-destructive" : "text-primary"
                       }`} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className="text-sm font-medium text-foreground truncate">
                       {file.filename}
                     </p>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                         {file.uploadedAt.toLocaleDateString()}
                       </span>
                       {file.error && (
-                        <span className="text-xs text-red-500 truncate max-w-[200px]" title={file.error}>
+                        <span className="text-xs text-destructive truncate max-w-[200px]" title={file.error}>
                           • {file.error}
                         </span>
                       )}
@@ -212,17 +212,17 @@ export function DocumentUpload() {
 
                 <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                   {file.status === "completed" && (
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                    <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
                   )}
                   {file.status === "failed" && (
-                    <AlertCircle className="w-5 h-5 text-red-500" />
+                    <AlertCircle className="w-5 h-5 text-destructive" />
                   )}
                   {(file.status === "processing" || file.status === "pending") && (
-                    <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
                   )}
                   <button
                     onClick={() => removeFile(file.id)}
-                    className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
+                    className="p-1 hover:bg-secondary rounded-lg text-muted-foreground hover:text-destructive transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>

@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useTheme } from "@/hooks/useTheme";
 import { unifiedQueryApi, queryApi } from "@/lib/api";
 import { Loader2, Sparkles } from "lucide-react";
 
@@ -40,6 +42,7 @@ export function ChatInterface({
   isLoading: externalIsLoading,
   setIsLoading: externalSetIsLoading,
 }: ChatInterfaceProps) {
+  const { theme, toggleTheme, mounted } = useTheme();
   // Use external state if provided, otherwise use internal state
   const [internalMessages, setInternalMessages] = useState<Message[]>([]);
   const [internalIsLoading, setInternalIsLoading] = useState(false);
@@ -469,23 +472,30 @@ export function ChatInterface({
 
   return (
     <div
-      className="flex flex-col h-full w-full bg-white"
+      className="flex flex-col h-full w-full bg-background text-foreground transition-colors duration-300"
       ref={chatContainerRef}
     >
+      {/* Theme Toggle - Fixed Position (only when fullScreen) */}
+      {fullScreen && mounted && (
+        <div className="fixed top-4 right-4 z-50">
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
+        </div>
+      )}
+
       {/* Messages Container - ChatGPT Style */}
-      <div className="flex-1 overflow-y-auto bg-white">
+      <div className="flex-1 overflow-y-auto bg-background">
         <div className="max-w-3xl mx-auto">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full py-12 px-4">
               <div className="mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
-                  <Sparkles className="w-8 h-8 text-white" />
+                <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
+                  <Sparkles className="w-8 h-8 text-primary-foreground" />
                 </div>
               </div>
-              <h2 className="text-4xl font-semibold text-gray-900 mb-3 text-center">
+              <h2 className="text-4xl font-semibold text-foreground mb-3 text-center">
                 How can I help you today?
               </h2>
-              <p className="text-gray-600 mb-8 text-center max-w-md">
+              <p className="text-muted-foreground mb-8 text-center max-w-md">
                 Ask me anything about courses, syllabus, assignments, or university information.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl w-full">
@@ -498,7 +508,7 @@ export function ChatInterface({
                   <button
                     key={idx}
                     onClick={() => handleSend(example)}
-                    className="text-left p-4 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 hover:border-gray-300 transition-all text-sm text-gray-700 font-medium hover:shadow-sm"
+                    className="text-left p-4 bg-card hover:bg-secondary/50 rounded-xl border border-border hover:border-primary/50 transition-all text-sm text-foreground font-medium hover:shadow-sm"
                   >
                     {example}
                   </button>

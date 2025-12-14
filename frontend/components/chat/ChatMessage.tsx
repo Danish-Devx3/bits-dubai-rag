@@ -110,16 +110,16 @@ export function ChatMessage({
   
   return (
     <div
-      className={`flex gap-4 py-4 px-4 md:px-6 ${
-        isUser ? "bg-white" : "bg-gray-50"
+      className={`flex gap-4 py-4 px-4 md:px-6 transition-colors duration-300 ${
+        isUser ? "bg-background" : "bg-secondary/30"
       }`}
     >
       {/* Avatar */}
       <div
-        className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+        className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300 ${
           isUser
-            ? "bg-blue-600 text-white"
-            : "bg-gray-800 text-white"
+            ? "bg-primary text-primary-foreground"
+            : "bg-muted text-foreground"
         }`}
       >
         {isUser ? (
@@ -131,13 +131,13 @@ export function ChatMessage({
       
       {/* Message Content */}
       <div className="flex-1 min-w-0">
-        <div className="prose prose-sm max-w-none">
+        <div className="prose prose-sm max-w-none dark:prose-invert">
           {isUser ? (
-            <p className="text-sm whitespace-pre-wrap text-gray-900 leading-relaxed">{displayContent}</p>
+            <p className="text-sm whitespace-pre-wrap text-foreground leading-relaxed">{displayContent}</p>
           ) : isLoading && !displayContent ? (
             <div className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 text-gray-600 animate-spin" />
-              <span className="text-sm text-gray-600">Thinking...</span>
+              <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
+              <span className="text-sm text-muted-foreground">Thinking...</span>
             </div>
           ) : (
             <div className="markdown-content">
@@ -157,26 +157,26 @@ export function ChatMessage({
                       return null;
                     }
                     return (
-                      <p className="mb-3 last:mb-0 text-gray-800 leading-7">{children}</p>
+                      <p className="mb-3 last:mb-0 text-foreground leading-7">{children}</p>
                     );
                   },
                   ul: ({ children }) => (
-                    <ul className="list-disc list-inside mb-3 space-y-1.5 text-gray-900 font-medium ml-4">
+                    <ul className="list-disc list-inside mb-3 space-y-1.5 text-foreground font-medium ml-4">
                       {children}
                     </ul>
                   ),
                   ol: ({ children }) => (
-                    <ol className="list-decimal list-inside mb-3 space-y-1.5 text-gray-900 font-medium ml-4">
+                    <ol className="list-decimal list-inside mb-3 space-y-1.5 text-foreground font-medium ml-4">
                       {children}
                     </ol>
                   ),
                   li: ({ children }) => (
-                    <li className="text-gray-900 font-medium leading-6">{children}</li>
+                    <li className="text-foreground font-medium leading-6">{children}</li>
                   ),
                   code: ({ children, className }) => {
                     const isInline = !className;
                     return isInline ? (
-                      <code className="bg-gray-200 px-1.5 py-0.5 rounded text-xs text-gray-900 font-mono font-semibold">
+                      <code className="bg-secondary px-1.5 py-0.5 rounded text-xs text-foreground font-mono font-semibold">
                         {children}
                       </code>
                     ) : (
@@ -184,69 +184,69 @@ export function ChatMessage({
                     );
                   },
                   pre: ({ children }) => (
-                    <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto mb-3 text-sm border border-gray-300">
+                    <pre className="bg-secondary p-4 rounded-lg overflow-x-auto mb-3 text-sm border border-border">
                       {children}
                     </pre>
                   ),
                   table: ({ children }) => (
                     <div className="overflow-x-auto my-4 -mx-2 px-2">
-                      <table className="min-w-full border-collapse border border-gray-300 text-sm bg-white rounded-lg shadow-sm">
+                      <table className="min-w-full border-collapse border border-border text-sm bg-card rounded-lg shadow-sm">
                         {children}
                       </table>
                     </div>
                   ),
                   thead: ({ children }) => (
-                    <thead className="bg-gray-100">{children}</thead>
+                    <thead className="bg-secondary">{children}</thead>
                   ),
                   tbody: ({ children }) => (
-                    <tbody className="divide-y divide-gray-200">{children}</tbody>
+                    <tbody className="divide-y divide-border">{children}</tbody>
                   ),
                   tr: ({ children }) => (
-                    <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                    <tr className="border-b border-border hover:bg-secondary/50 transition-colors">
                       {children}
                     </tr>
                   ),
                   th: ({ children }) => (
-                    <th className="border border-gray-300 px-4 py-3 text-left font-bold text-gray-900 bg-gray-100 text-xs uppercase tracking-wider whitespace-nowrap">
+                    <th className="border border-border px-4 py-3 text-left font-bold text-foreground bg-secondary text-xs uppercase tracking-wider whitespace-nowrap">
                       {children}
                     </th>
                   ),
                   td: ({ children }) => (
-                    <td className="border border-gray-300 px-4 py-2.5 text-gray-800 text-sm">
+                    <td className="border border-border px-4 py-2.5 text-foreground text-sm">
                       {children}
                     </td>
                   ),
                   strong: ({ children }) => (
-                    <strong className="text-gray-900 font-bold">{children}</strong>
+                    <strong className="text-foreground font-bold">{children}</strong>
                   ),
                   em: ({ children }) => (
-                    <em className="text-gray-900 font-medium italic">{children}</em>
+                    <em className="text-foreground font-medium italic">{children}</em>
                   ),
                   h1: ({ children }) => (
-                    <h1 className="text-2xl font-bold text-gray-900 mt-6 mb-3 first:mt-0 border-b border-gray-300 pb-2">{children}</h1>
+                    <h1 className="text-2xl font-bold text-foreground mt-6 mb-3 first:mt-0 border-b border-border pb-2">{children}</h1>
                   ),
                   h2: ({ children }) => (
-                    <h2 className="text-xl font-bold text-gray-900 mt-5 mb-3 first:mt-0 border-b border-gray-200 pb-1.5">{children}</h2>
+                    <h2 className="text-xl font-bold text-foreground mt-5 mb-3 first:mt-0 border-b border-border pb-1.5">{children}</h2>
                   ),
                   h3: ({ children }) => (
-                    <h3 className="text-lg font-bold text-gray-900 mt-4 mb-2 first:mt-0">{children}</h3>
+                    <h3 className="text-lg font-bold text-foreground mt-4 mb-2 first:mt-0">{children}</h3>
                   ),
                   h4: ({ children }) => (
-                    <h4 className="text-base font-bold text-gray-900 mt-3 mb-2 first:mt-0">{children}</h4>
+                    <h4 className="text-base font-bold text-foreground mt-3 mb-2 first:mt-0">{children}</h4>
                   ),
                   h5: ({ children }) => (
-                    <h5 className="text-sm font-bold text-gray-900 mt-2 mb-1.5 first:mt-0">{children}</h5>
+                    <h5 className="text-sm font-bold text-foreground mt-2 mb-1.5 first:mt-0">{children}</h5>
                   ),
                   h6: ({ children }) => (
-                    <h6 className="text-sm font-semibold text-gray-900 mt-2 mb-1.5 first:mt-0">{children}</h6>
+                    <h6 className="text-sm font-semibold text-foreground mt-2 mb-1.5 first:mt-0">{children}</h6>
                   ),
                   blockquote: ({ children }) => (
-                    <blockquote className="border-l-4 border-blue-500 pl-4 my-3 italic text-gray-700 bg-blue-50 py-2 rounded-r">
+                    <blockquote className="border-l-4 border-primary pl-4 my-3 italic text-muted-foreground bg-primary/10 py-2 rounded-r">
                       {children}
                     </blockquote>
                   ),
                   hr: () => (
-                    <hr className="my-4 border-gray-300" />
+                    <hr className="my-4 border-border" />
                   ),
                   br: () => (
                     <br className="my-1" />
@@ -257,15 +257,15 @@ export function ChatMessage({
               </ReactMarkdown>
               {/* Typing cursor when streaming */}
               {isLoading && displayContent && (
-                <span className="inline-block w-0.5 h-4 bg-gray-600 ml-1 animate-pulse" />
+                <span className="inline-block w-0.5 h-4 bg-foreground ml-1 animate-pulse" />
               )}
             </div>
           )}
           
           {/* Metadata (timing) */}
           {metadata && metadata.durationFormatted && !isUser && !isLoading && (
-            <div className="mt-2 pt-2 border-t border-gray-200">
-              <p className="text-xs text-gray-500 italic">
+            <div className="mt-2 pt-2 border-t border-border">
+              <p className="text-xs text-muted-foreground italic">
                 Generated in {metadata.durationFormatted}
               </p>
             </div>
@@ -273,14 +273,14 @@ export function ChatMessage({
 
           {/* Recommendations */}
           {recommendations && recommendations.length > 0 && !isUser && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <p className="text-sm font-semibold text-gray-700 mb-2">You might want to try:</p>
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="text-sm font-semibold text-foreground mb-2">You might want to try:</p>
               <div className="flex flex-wrap gap-2">
                 {recommendations.map((rec, index) => (
                   <button
                     key={index}
                     onClick={() => onRecommendationClick?.(rec)}
-                    className="px-3 py-1.5 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg border border-blue-200 transition-colors font-medium"
+                    className="px-3 py-1.5 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-lg border border-primary/20 transition-colors font-medium"
                   >
                     {rec}
                   </button>
@@ -291,16 +291,16 @@ export function ChatMessage({
 
           {/* Error and Retry UI */}
           {hasError && !isUser && (
-            <div className="mt-4 pt-4 border-t border-red-200">
+            <div className="mt-4 pt-4 border-t border-destructive/20">
               <div className="flex items-center gap-2 mb-3">
-                <AlertCircle className="w-4 h-4 text-red-600" />
-                <span className="text-sm text-red-700 font-medium">Connection Error</span>
+                <AlertCircle className="w-4 h-4 text-destructive" />
+                <span className="text-sm text-destructive font-medium">Connection Error</span>
               </div>
               {canRetry && onRetry && (
                 <Button
                   onClick={onRetry}
                   disabled={isLoading}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm disabled:opacity-50"
+                  className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors flex items-center gap-2 text-sm disabled:opacity-50"
                 >
                   {isLoading ? (
                     <>

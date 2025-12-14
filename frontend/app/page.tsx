@@ -1,239 +1,178 @@
 "use client";
 
-import { BookOpen, GraduationCap, FileText, Search, Zap, Shield, MessageSquare, LogIn } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import Link from "next/link";
+import { Circle } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useTheme } from "@/hooks/useTheme";
 
 export default function Home() {
+  const { theme, toggleTheme, mounted } = useTheme();
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-600 rounded-lg">
-                <BookOpen className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">
-                  BITS Dubai RAG Assistant
-                </h1>
-                <p className="text-xs text-gray-500">
-                  University Information System
-                </p>
-              </div>
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Background Pattern */}
+      <div className="fixed inset-0 -z-10 bg-grid-pattern opacity-30" />
+
+      {/* Gradient Mesh Background */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        {/* Primary gradient orb - top center */}
+        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/8 dark:bg-primary/5 rounded-full blur-[120px]" />
+        {/* Secondary gradient orb - bottom left */}
+        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-500/6 dark:bg-blue-400/4 rounded-full blur-[100px]" />
+        {/* Accent gradient orb - right side */}
+        <div className="absolute top-1/3 right-[-5%] w-[400px] h-[400px] bg-violet-500/5 dark:bg-violet-400/3 rounded-full blur-[80px]" />
+      </div>
+
+      {/* Navbar */}
+      <header className="fixed top-0 left-0 right-0 z-50 px-6 py-3 bg-background/80 backdrop-blur-md border-b border-border/30">
+        <nav className="landing-container flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-3 text-lg font-bold tracking-tight text-foreground">
+            <div className="inline-flex items-center justify-center w-8 h-8 bg-primary/5 rounded-lg border border-primary/10">
+              <Circle className="w-4 h-4 text-primary fill-primary/20" />
             </div>
-            <nav className="hidden md:flex items-center gap-6">
-              <a 
-                href="#features" 
-                className="text-sm text-gray-900 hover:text-blue-700 transition-colors font-semibold no-underline"
-              >
-                Features
-              </a>
-              <a 
-                href="#about" 
-                className="text-sm text-gray-900 hover:text-blue-700 transition-colors font-semibold no-underline"
-              >
-                About
-              </a>
-              <Link href="/login">
-                <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white hover:text-white font-semibold px-4 py-2 rounded-lg transition-colors">
-                  <LogIn className="w-4 h-4" />
-                  Login
-                </Button>
-              </Link>
-            </nav>
-            <div className="md:hidden">
-              <Link href="/login">
-                <Button size="sm" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold">
-                  <LogIn className="w-4 h-4" />
-                  Login
-                </Button>
-              </Link>
+            BITS-GPT
+          </Link>
+          <div className="flex items-center gap-3">
+            {mounted && <ThemeToggle theme={theme} onToggle={toggleTheme} />}
+            <Link href="/login">
+              <Button variant="outline" size="sm" className="font-medium text-foreground border-foreground/20 hover:bg-foreground hover:text-background transition-all">
+                Sign in
+              </Button>
+            </Link>
+          </div>
+        </nav>
+      </header>
+
+      {/* Hero */}
+      <section className="landing-hero landing-section relative">
+        <div className="landing-container text-center">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 mb-10 text-sm font-medium text-foreground border border-border rounded-full bg-secondary/30 animate-fade-in">
+            <span className="w-2 h-2 bg-primary rounded-full" />
+            Built for BITS Pilani Dubai
+          </div>
+
+          {/* Headline */}
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight leading-[1.1] mb-8 text-foreground animate-fade-in-up">
+            Find answers in your
+            <br />
+            <span className="text-muted-foreground">university documents</span>
+          </h1>
+
+          {/* Subheadline */}
+          <p className="text-xl md:text-2xl text-muted-foreground max-w-xl mx-auto mb-12 leading-relaxed animate-fade-in-up delay-200">
+            Search across policies, syllabi, and academic regulations. Get instant, cited answers.
+          </p>
+
+          {/* CTA */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up delay-300">
+            <Link href="/login">
+              <Button variant="outline" size="lg" className="h-12 px-8 text-base font-medium rounded-full gap-2 border-foreground/20 text-foreground hover:bg-foreground hover:text-background transition-all">
+                Get started
+              </Button>
+            </Link>
+            <Link href="#features">
+              <Button variant="ghost" size="lg" className="h-12 px-8 text-base font-medium rounded-full text-foreground hover:text-primary">
+                Learn more
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="landing-section border-t border-border/50">
+        <div className="landing-container">
+          <div className="text-center mb-20">
+            <p className="text-base font-semibold text-primary mb-4">How it works</p>
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
+              Simple, fast, reliable
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="feature-card text-center">
+              <h3 className="text-xl font-semibold mb-3 text-foreground">Ask anything</h3>
+              <p className="text-base text-muted-foreground leading-relaxed">Type your question naturally. No keywords needed.</p>
+            </div>
+            <div className="feature-card text-center">
+              <h3 className="text-xl font-semibold mb-3 text-foreground">AI searches</h3>
+              <p className="text-base text-muted-foreground leading-relaxed">We scan every PDF and policy document instantly.</p>
+            </div>
+            <div className="feature-card text-center">
+              <h3 className="text-xl font-semibold mb-3 text-foreground">Get answers</h3>
+              <p className="text-base text-muted-foreground leading-relaxed">Receive cited answers with direct source links.</p>
             </div>
           </div>
         </div>
-      </header>
+      </section>
 
-      {/* Hero Section */}
-      <main>
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="text-center">
-            <div className="inline-block p-4 bg-blue-100 rounded-full mb-6">
-              <GraduationCap className="w-16 h-16 text-blue-600" />
-            </div>
-            <h1 className="text-5xl font-bold text-gray-900 mb-6">
-              Your Intelligent University
-              <br />
-              <span className="text-blue-600">Information Assistant</span>
-            </h1>
-            <p className="text-xl text-gray-800 mb-8 max-w-2xl mx-auto font-medium">
-              Get instant answers about courses, syllabi, assignments, and more.
-              Powered by advanced RAG technology for accurate, context-aware responses.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/login">
-                <Button size="lg" className="text-lg px-8 py-6">
-                  <LogIn className="w-5 h-5 mr-2" />
-                  Get Started
-                </Button>
-              </Link>
-              <Button variant="outline" size="lg" className="text-lg px-8 py-6">
-                <FileText className="w-5 h-5 mr-2" />
-                Learn More
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        {/* Features Section */}
-        <section id="features" className="bg-white py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Powerful Features
+      {/* Value Props */}
+      <section className="landing-section bg-secondary/30">
+        <div className="landing-container">
+          <div className="grid md:grid-cols-2 gap-20 items-center">
+            <div>
+              <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 text-foreground">
+                Stop searching manually
               </h2>
-              <p className="text-lg text-gray-800 max-w-2xl mx-auto font-medium">
-                Everything you need to get instant answers about your university
+              <p className="text-lg text-muted-foreground leading-relaxed mb-8">
+                Academic documents are scattered and hard to navigate. BITS-GPT indexes everything so you can focus on what matters—learning and completing your work.
               </p>
+              <ul className="space-y-4">
+                <li className="flex items-center gap-4 text-base text-foreground">
+                  <span className="w-2 h-2 bg-primary rounded-full shrink-0" />
+                  Grading policies & exam regulations
+                </li>
+                <li className="flex items-center gap-4 text-base text-foreground">
+                  <span className="w-2 h-2 bg-primary rounded-full shrink-0" />
+                  Course syllabi & prerequisites
+                </li>
+                <li className="flex items-center gap-4 text-base text-foreground">
+                  <span className="w-2 h-2 bg-primary rounded-full shrink-0" />
+                  Administrative procedures
+                </li>
+              </ul>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[
-                {
-                  icon: Search,
-                  title: "Intelligent Search",
-                  description: "Ask questions in natural language and get accurate, context-aware answers instantly.",
-                },
-                {
-                  icon: Zap,
-                  title: "Real-time Streaming",
-                  description: "Watch responses stream in real-time for a smooth, interactive experience.",
-                },
-                {
-                  icon: FileText,
-                  title: "Document Upload",
-                  description: "Upload course materials, syllabi, and documents to make them searchable.",
-                },
-                {
-                  icon: Shield,
-                  title: "Secure & Private",
-                  description: "Your data is secure and processed with privacy in mind.",
-                },
-                {
-                  icon: GraduationCap,
-                  title: "Course Information",
-                  description: "Get detailed information about courses, requirements, and schedules.",
-                },
-                {
-                  icon: BookOpen,
-                  title: "24/7 Available",
-                  description: "Access information anytime, anywhere with our always-on assistant.",
-                },
-              ].map((feature, idx) => (
-                <div
-                  key={idx}
-                  className="p-6 bg-gray-50 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow"
-                >
-                  <div className="p-3 bg-blue-100 rounded-lg w-fit mb-4">
-                    <feature.icon className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-800 font-medium">
-                    {feature.description}
-                  </p>
+            <div className="relative aspect-square max-w-sm mx-auto">
+              <div className="feature-card h-full flex items-center justify-center">
+                <div className="text-center p-8">
+                  <div className="text-2xl font-bold text-primary mb-3">Comprehensive</div>
+                  <p className="text-base text-muted-foreground">Documents indexed & searchable</p>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* How It Works */}
-        <section id="about" className="bg-gray-50 py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                How It Works
-              </h2>
-              <p className="text-lg text-gray-800 max-w-2xl mx-auto font-medium">
-                Simple steps to get the information you need
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                {
-                  step: "1",
-                  title: "Login to Your Account",
-                  description: "Sign in as a student or administrator to access the system.",
-                },
-                {
-                  step: "2",
-                  title: "Ask Your Question",
-                  description: "Type your question in natural language. For example: 'What is the syllabus for 3rd year CSE?'",
-                },
-                {
-                  step: "3",
-                  title: "Get Instant Answers",
-                  description: "Our AI searches through all uploaded documents and provides accurate, context-aware responses.",
-                },
-              ].map((item, idx) => (
-                <div key={idx} className="text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 text-white rounded-full text-2xl font-bold mb-4">
-                    {item.step}
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-gray-800 font-medium">
-                    {item.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="bg-blue-600 text-white py-20">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl font-bold mb-4">
-              Ready to Get Started?
-            </h2>
-            <p className="text-xl mb-8 opacity-90">
-              Login to access the intelligent university information assistant!
-            </p>
-            <div className="flex justify-center gap-4">
-              <Link href="/login">
-                <Button size="lg" variant="outline" className="bg-white text-blue-600 hover:bg-gray-100 border-white">
-                  <LogIn className="w-5 h-5 mr-2" />
-                  Login Now
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
-      </main>
+      {/* Final CTA */}
+      <section className="landing-section text-center">
+        <div className="landing-container max-w-xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 text-foreground">
+            Ready to save time?
+          </h2>
+          <p className="text-xl text-muted-foreground mb-10">
+            Join students who find answers in seconds, not hours.
+          </p>
+          <Link href="/login">
+            <Button variant="outline" size="lg" className="h-12 px-10 text-base font-medium rounded-full border-foreground/20 text-foreground hover:bg-foreground hover:text-background transition-all">
+              Start now
+            </Button>
+          </Link>
+        </div>
+      </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="p-2 bg-blue-600 rounded-lg">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <h3 className="text-lg font-semibold text-white">
-                BITS Dubai RAG Assistant
-              </h3>
-            </div>
-            <p className="text-sm mb-4">
-              © 2024 BITS Dubai. Powered by NoDevBuild.
-            </p>
-            <p className="text-xs opacity-75">
-              Intelligent information retrieval for modern education
-            </p>
+      <footer className="border-t border-border py-10 px-6">
+        <div className="landing-container flex flex-col md:flex-row justify-between items-center gap-6">
+          <p className="text-base text-muted-foreground">
+            © 2024 BITS Pilani Dubai Campus
+          </p>
+          <div className="flex gap-8 text-base text-muted-foreground">
+            <Link href="#" className="hover:text-foreground transition-colors">Privacy</Link>
+            <Link href="#" className="hover:text-foreground transition-colors">Terms</Link>
+            <Link href="#" className="hover:text-foreground transition-colors">Contact</Link>
           </div>
         </div>
       </footer>
