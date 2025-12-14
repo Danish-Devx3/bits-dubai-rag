@@ -182,30 +182,104 @@ export class LlmWithToolsService {
   // ... (Keep existing private helper methods: suggestToolsFromQuery, buildToolSelectionPrompt, parseToolCalls, buildFinalResponsePrompt, formatFallbackResponse)
   // I will include them in the file content to ensure it is complete.
 
+  // Synonym/fuzzy mappings for tool suggestion
+  private toolMappings = {
+    get_student_grades: {
+      keywords: ['grade', 'gpa', 'cgpa', 'mark', 'result', 'score', 'transcript', 'academic'],
+      fuzzy: ['grde', 'grds', 'grd', 'mrks', 'mrk', 'scre', 'gps', 'cgp', 'gradez', 'marsk'],
+    },
+    get_student_payments: {
+      keywords: ['payment', 'fee', 'fees', 'due', 'owe', 'outstanding', 'balance', 'pay', 'tuition', 'money'],
+      fuzzy: ['pymnt', 'pymt', 'paymnt', 'pament', 'feee', 'fes', 'dew', 'oww', 'fess'],
+    },
+    get_enrolled_courses: {
+      keywords: ['course', 'enroll', 'enrolled', 'current', 'register', 'subject', 'class'],
+      fuzzy: ['corse', 'cors', 'enrol', 'enrll', 'corses', 'subjct', 'registr'],
+    },
+    get_attendance: {
+      keywords: ['attendance', 'present', 'absent', 'miss', 'attend', 'class'],
+      fuzzy: ['att', 'attnd', 'attndc', 'attendace', 'presnt', 'absnt', 'atendance', 'atend'],
+    },
+    get_academic_summary: {
+      keywords: ['summary', 'overall', 'dashboard', 'overview', 'status', 'standing'],
+      fuzzy: ['summry', 'sumary', 'overal', 'dashbrd', 'ovrview', 'summery'],
+    },
+    get_student_profile: {
+      keywords: ['profile', 'info', 'information', 'details', 'name', 'about'],
+      fuzzy: ['profil', 'prfl', 'inf', 'detls', 'profle'],
+    },
+  };
+
   private suggestToolsFromQuery(query: string, availableTools: any[]): any[] {
     const lowerQuery = query.toLowerCase();
+    const words = lowerQuery.split(/\s+/);
     const suggested: any[] = [];
 
-    if (lowerQuery.includes('grade') || lowerQuery.includes('gpa') || lowerQuery.includes('mark')) {
-      suggested.push({ name: 'get_student_grades', parameters: {} });
-    }
-    if (lowerQuery.includes('payment') || lowerQuery.includes('fee') || lowerQuery.includes('due')) {
-      suggested.push({ name: 'get_student_payments', parameters: {} });
-    }
-    if (lowerQuery.includes('course') && (lowerQuery.includes('enroll') || lowerQuery.includes('current'))) {
-      suggested.push({ name: 'get_enrolled_courses', parameters: {} });
-    }
-    if (lowerQuery.includes('attendance') || lowerQuery.includes('present')) {
-      suggested.push({ name: 'get_attendance', parameters: {} });
-    }
-    if (lowerQuery.includes('summary') || lowerQuery.includes('overall') || lowerQuery.includes('dashboard')) {
-      suggested.push({ name: 'get_academic_summary', parameters: {} });
-    }
-    if (lowerQuery.includes('profile') || lowerQuery.includes('info') || lowerQuery.includes('standing')) {
-      suggested.push({ name: 'get_student_profile', parameters: {} });
+    for (const [toolName, { keywords, fuzzy }] of Object.entries(this.toolMappings)) {
+      let matched = false;
+
+      // Check exact keyword match
+      if (keywords.some(kw => lowerQuery.includes(kw))) {
+        matched = true;
+      }
+
+      // Check fuzzy patterns
+      if (!matched && fuzzy.some(fw => lowerQuery.includes(fw))) {
+        matched = true;
+      }
+
+      // Check Levenshtein similarity for each word
+      if (!matched) {
+        for (const word of words) {
+          if (word.length < 3) continue;
+
+          const allPatterns = [...keywords, ...fuzzy];
+          for (const pattern of allPatterns) {
+            if (this.levenshteinSimilarity(word, pattern) > 0.7) {
+              matched = true;
+              break;
+            }
+            // Partial prefix match (e.g., "att" matches "attendance")
+            if (pattern.startsWith(word) && word.length >= 3) {
+              matched = true;
+              break;
+            }
+          }
+          if (matched) break;
+        }
+      }
+
+      if (matched) {
+        suggested.push({ name: toolName, parameters: {} });
+      }
     }
 
     return suggested;
+  }
+
+  /**
+   * Levenshtein similarity (0-1 scale)
+   */
+  private levenshteinSimilarity(a: string, b: string): number {
+    if (a === b) return 1;
+    if (!a.length || !b.length) return 0;
+
+    const matrix: number[][] = [];
+    for (let i = 0; i <= a.length; i++) matrix[i] = [i];
+    for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+
+    for (let i = 1; i <= a.length; i++) {
+      for (let j = 1; j <= b.length; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + cost
+        );
+      }
+    }
+
+    return 1 - matrix[a.length][b.length] / Math.max(a.length, b.length);
   }
 
   private buildToolSelectionPrompt(

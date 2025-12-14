@@ -440,7 +440,7 @@ export default function StudentPage() {
       {/* Left Sidebar */}
       <aside
         style={{ width: sidebarOpen ? sidebarWidth : 0 }}
-        className="flex-shrink-0 border-r border-border/50 flex flex-col relative bg-secondary/30 overflow-hidden transition-[width] duration-500 ease-out"
+        className="flex-shrink-0 border-r border-border/50 flex flex-col relative bg-secondary/30 overflow-hidden transition-[width] duration-300 ease-out"
       >
         {/* Logo */}
         <div className="p-4 flex items-center gap-3 min-w-[200px]">
@@ -484,8 +484,8 @@ export default function StudentPage() {
                   key={session.id}
                   onClick={() => handleSelectChat(session)}
                   className={`group w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-lg transition-all duration-150 cursor-pointer ${currentChatId === session.id
-                      ? 'bg-primary/10 text-foreground'
-                      : 'text-muted-foreground hover:bg-transparent hover:text-foreground'
+                    ? 'bg-primary/10 text-foreground'
+                    : 'text-muted-foreground hover:bg-background/50 hover:text-foreground'
                     }`}
                 >
                   <MessageSquare className="w-4 h-4 flex-shrink-0 opacity-60" />
@@ -507,9 +507,9 @@ export default function StudentPage() {
         <div className="p-3 border-t border-border/30 min-w-[200px]">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-background/60 rounded-lg transition-all duration-150"
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all duration-150 group"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-4 h-4 group-hover:text-red-500" />
             <span className="text-[13px]">Log out</span>
           </button>
         </div>
@@ -517,7 +517,8 @@ export default function StudentPage() {
         {/* Resize Handle */}
         <div
           onMouseDown={startResizing}
-          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize transition-colors duration-150 ${isResizing ? 'bg-primary' : 'bg-transparent hover:bg-primary/40'}`}
+          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize transition-colors duration-150 ${isResizing ? 'bg-primary' : 'bg-transparent hover:bg-primary/40'
+            }`}
         />
       </aside>
 
@@ -556,7 +557,7 @@ export default function StudentPage() {
                   <Circle className="w-6 h-6 text-primary fill-primary/30" />
                 </div>
                 <h1 className="text-3xl md:text-4xl font-semibold text-foreground mb-2 text-center tracking-tight">
-                  How can I help you?
+                  How can I help you{user?.name ? `, ${user.name.split(' ')[0].charAt(0).toUpperCase()}${user.name.split(' ')[0].slice(1).toLowerCase()}` : ''}?
                 </h1>
                 <p className="text-muted-foreground text-center text-[15px]">
                   Ask about your grades, schedule, or campus facilities
@@ -601,7 +602,7 @@ export default function StudentPage() {
         </div>
 
         {/* Chat Input */}
-        <div className="p-4 pt-2 border-t border-border/30 bg-gradient-to-t from-background to-transparent">
+        <div className="p-4 pt-2  bg-gradient-to-t from-background to-transparent">
           <div className="max-w-3xl mx-auto">
             <ChatInput onSend={handleSend} disabled={isLoading} />
           </div>

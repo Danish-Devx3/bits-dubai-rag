@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, KeyboardEvent } from "react";
+import { useState, KeyboardEvent, useRef, useEffect } from "react";
 import { Send, Loader2 } from "lucide-react";
-import { Button } from "../ui/Button";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -13,43 +12,71 @@ interface ChatInputProps {
 export function ChatInput({
   onSend,
   disabled = false,
-  placeholder = "Type your question...",
+  placeholder = "Message BITS-GPT...",
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const scrollHeight = textareaRef.current.scrollHeight;
+      textareaRef.current.style.height = Math.min(scrollHeight, 150) + 'px';
+    }
+  }, [message]);
+
+  // Focus textarea on mount (desktop only)
+  useEffect(() => {
+    if (textareaRef.current && !disabled && window.innerWidth >= 768) {
+      textareaRef.current.focus();
+    }
+  }, [disabled]);
 
   const handleSend = () => {
     if (message.trim() && !disabled) {
       onSend(message.trim());
       setMessage("");
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
     }
   };
 
-  const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
 
+  const maxChars = 2000;
+
   return (
-    <div className="border-t border-border bg-background transition-colors duration-300">
-      <div className="max-w-3xl mx-auto px-4 py-4">
-        <div className="flex gap-2 items-end">
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder={placeholder}
-              disabled={disabled}
-              className="w-full px-4 py-3 pr-12 border border-border rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed text-foreground placeholder:text-muted-foreground bg-background text-sm"
-            />
-          </div>
+    <div className="sticky bottom-0 p-3 sm:p-4 bg-background">
+      <div className="max-w-3xl mx-auto">
+        <div className="flex items-end gap-2 bg-card/80 backdrop-blur-sm rounded-2xl px-3 py-2">
+          <textarea
+            ref={textareaRef}
+            value={message}
+            onChange={(e) => setMessage(e.target.value.slice(0, maxChars))}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            placeholder={placeholder}
+            disabled={disabled}
+            rows={1}
+            className="flex-1 bg-transparent resize-none focus:outline-none text-foreground placeholder:text-muted-foreground/60 text-sm leading-relaxed min-h-[24px] max-h-[150px] py-1"
+            style={{ scrollbarWidth: 'none' }}
+          />
           <button
             onClick={handleSend}
             disabled={disabled || !message.trim()}
-            className="p-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+            className={`shrink-0 p-2 rounded-xl transition-all ${message.trim() && !disabled
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted/50 text-muted-foreground/40'
+              }`}
           >
             {disabled ? (
               <Loader2 className="w-4 h-4 animate-spin" />

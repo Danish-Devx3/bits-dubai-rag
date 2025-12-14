@@ -483,8 +483,8 @@ export default function AdminPage() {
                   key={session.id}
                   onClick={() => handleSelectChat(session)}
                   className={`group w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-lg transition-all duration-150 cursor-pointer ${currentChatId === session.id
-                      ? 'bg-primary/10 text-foreground'
-                      : 'text-muted-foreground hover:bg-transparent hover:text-foreground'
+                    ? 'bg-primary/10 text-foreground'
+                    : 'text-muted-foreground hover:bg-transparent hover:text-foreground'
                     }`}
                 >
                   <MessageSquare className="w-4 h-4 flex-shrink-0 opacity-60" />
@@ -506,9 +506,9 @@ export default function AdminPage() {
         <div className="p-3 border-t border-border min-w-[200px]">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all duration-150 group"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-4 h-4 group-hover:text-red-500" />
             <span>Log out</span>
           </button>
         </div>
