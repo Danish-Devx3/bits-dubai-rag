@@ -12,29 +12,29 @@ export async function seedDatabase(prisma: PrismaClient) {
   }
 
   const client = new MongoClient(mongoUrl);
-  
+
   try {
     await client.connect();
     console.log('✅ Connected to MongoDB');
-    
+
     const db = client.db();
-    
+
     // Clear existing data
     console.log('Clearing existing data...');
-    await db.collection('attendances').deleteMany({}).catch(() => {});
-    await db.collection('grades').deleteMany({}).catch(() => {});
-    await db.collection('payments').deleteMany({}).catch(() => {});
-    await db.collection('enrollments').deleteMany({}).catch(() => {});
-    await db.collection('course_schedules').deleteMany({}).catch(() => {});
-    await db.collection('academic_calendars').deleteMany({}).catch(() => {});
-    await db.collection('courses').deleteMany({}).catch(() => {});
-    await db.collection('students').deleteMany({}).catch(() => {});
-    await db.collection('admins').deleteMany({}).catch(() => {});
+    await db.collection('attendances').deleteMany({}).catch(() => { });
+    await db.collection('grades').deleteMany({}).catch(() => { });
+    await db.collection('payments').deleteMany({}).catch(() => { });
+    await db.collection('enrollments').deleteMany({}).catch(() => { });
+    await db.collection('course_schedules').deleteMany({}).catch(() => { });
+    await db.collection('academic_calendars').deleteMany({}).catch(() => { });
+    await db.collection('courses').deleteMany({}).catch(() => { });
+    await db.collection('students').deleteMany({}).catch(() => { });
+    await db.collection('admins').deleteMany({}).catch(() => { });
 
     // Create Admin
     const adminHashedPassword = await bcrypt.hash('admin@bits2024', 10);
     const adminId = new ObjectId();
-    
+
     await db.collection('admins').insertOne({
       _id: adminId,
       adminId: 'ADMIN001',
@@ -49,7 +49,9 @@ export async function seedDatabase(prisma: PrismaClient) {
     const hashedPassword = await bcrypt.hash('password123', 10);
     const student1Id = new ObjectId();
     const student2Id = new ObjectId();
-    
+    const student3Id = new ObjectId(); // Shourya Tiwari
+    const student4Id = new ObjectId(); // Rohan Gupta
+
     await db.collection('students').insertMany([
       {
         _id: student1Id,
@@ -73,6 +75,48 @@ export async function seedDatabase(prisma: PrismaClient) {
         cgpa: 7.8,
         status: 'active',
       },
+      {
+        _id: student3Id,
+        studentId: '2023A7PS0404U',
+        erpId: '21120230404',
+        name: 'SHOURYA TIWARI',
+        email: 'f20230404@dubai.bits-pilani.ac.in',
+        password: hashedPassword,
+        program: 'B.E. Computer Science',
+        campus: 'Dubai, UAE',
+        gpa: 0.00, // Current semester in progress
+        cgpa: 7.67,
+        status: 'active',
+        academicStatus: 'Normal / Active',
+        practiceSchool: {
+          course: 'BITS F221',
+          station: 'IIT BHU',
+          supervisor: 'Prof. Dr. Ashutosh Mishra',
+          grade: 'A-',
+          units: 5.0,
+        },
+      },
+      {
+        _id: student4Id,
+        studentId: '2023A7PS0567U',
+        erpId: '21120230567',
+        name: 'ROHAN GUPTA',
+        email: 'f20230567@dubai.bits-pilani.ac.in',
+        password: hashedPassword,
+        program: 'B.E. Computer Science',
+        campus: 'Dubai, UAE',
+        gpa: 0.00, // Current semester in progress
+        cgpa: 8.91,
+        status: 'active',
+        academicStatus: 'Normal / Dean\'s List',
+        practiceSchool: {
+          course: 'BITS F221',
+          station: 'NTPC Limited (National Thermal Power Corporation)',
+          supervisor: 'Dr. Vilas Gaidhane',
+          grade: 'A',
+          units: 5.0,
+        },
+      },
     ]);
 
     // Create Courses
@@ -84,6 +128,9 @@ export async function seedDatabase(prisma: PrismaClient) {
     const course6Id = new ObjectId();
     const course7Id = new ObjectId();
     const course8Id = new ObjectId();
+    const course9Id = new ObjectId();  // Data Mining
+    const course10Id = new ObjectId(); // Intro to Psychology
+    const course11Id = new ObjectId(); // New Venture Creation
 
     await db.collection('courses').insertMany([
       {
@@ -166,6 +213,36 @@ export async function seedDatabase(prisma: PrismaClient) {
         type: 'core',
         isOpen: false,
       },
+      {
+        _id: course9Id,
+        courseCode: 'CS F415',
+        courseName: 'DATA MINING',
+        credits: 3,
+        department: 'CS',
+        description: 'Advanced data mining techniques and algorithms',
+        type: 'elective',
+        isOpen: true,
+      },
+      {
+        _id: course10Id,
+        courseCode: 'PSY F111',
+        courseName: 'INTRO TO PSYCHOLOGY',
+        credits: 3,
+        department: 'HSS',
+        description: 'Introduction to psychological concepts and theories',
+        type: 'open_elective',
+        isOpen: true,
+      },
+      {
+        _id: course11Id,
+        courseCode: 'BITS F468',
+        courseName: 'NEW VENTURE CREATION',
+        credits: 3,
+        department: 'MGMT',
+        description: 'Entrepreneurship and startup creation',
+        type: 'elective',
+        isOpen: true,
+      },
     ]);
 
     const currentSemester = 'FIRST SEMESTER 2025-2026';
@@ -215,6 +292,101 @@ export async function seedDatabase(prisma: PrismaClient) {
         status: 'enrolled',
         enrolledAt: new Date(),
       },
+      // Shourya Tiwari enrollments (student3Id)
+      // BITS F464 Machine Learning, BITS F468 New Venture Creation, CS F301, CS F342, CS F351, CS F372, GS F211
+      {
+        studentId: student3Id,
+        courseId: course5Id, // BITS F464 Machine Learning
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      {
+        studentId: student3Id,
+        courseId: course11Id, // BITS F468 New Venture Creation
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      {
+        studentId: student3Id,
+        courseId: course1Id, // CS F301
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      {
+        studentId: student3Id,
+        courseId: course2Id, // CS F342
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      {
+        studentId: student3Id,
+        courseId: course3Id, // CS F351
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      {
+        studentId: student3Id,
+        courseId: course4Id, // CS F372
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      {
+        studentId: student3Id,
+        courseId: course6Id, // GS F211
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      // Rohan Gupta enrollments (student4Id)
+      // CS F415 Data Mining, CS F301, CS F342, CS F351, CS F372, PSY F111
+      {
+        studentId: student4Id,
+        courseId: course9Id, // CS F415 Data Mining
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      {
+        studentId: student4Id,
+        courseId: course1Id, // CS F301
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      {
+        studentId: student4Id,
+        courseId: course2Id, // CS F342
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      {
+        studentId: student4Id,
+        courseId: course3Id, // CS F351
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      {
+        studentId: student4Id,
+        courseId: course4Id, // CS F372
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
+      {
+        studentId: student4Id,
+        courseId: course10Id, // PSY F111
+        semester: currentSemester,
+        status: 'enrolled',
+        enrolledAt: new Date(),
+      },
     ]);
 
     // Create Grades
@@ -255,6 +427,114 @@ export async function seedDatabase(prisma: PrismaClient) {
         gpa: 8.0,
         status: 'completed',
       },
+      // Shourya Tiwari current semester grades (in progress)
+      {
+        studentId: student3Id,
+        courseId: course5Id, // Machine Learning
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student3Id,
+        courseId: course2Id, // Computer Architecture
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student3Id,
+        courseId: course1Id, // Principles of Programming Lang
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student3Id,
+        courseId: course3Id, // Theory of Computation
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student3Id,
+        courseId: course4Id, // Operating Systems
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student3Id,
+        courseId: course6Id, // Modern Political Concepts
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      // Shourya Tiwari historical grades (Year 2 Semester 1)
+      {
+        studentId: student3Id,
+        courseId: course7Id, // OOP - B-
+        semester: 'FIRST SEMESTER 2024-2025',
+        finalGrade: 'B-',
+        gpa: 7.0,
+        status: 'completed',
+      },
+      {
+        studentId: student3Id,
+        courseId: course8Id, // Logic in CS - B
+        semester: 'FIRST SEMESTER 2024-2025',
+        finalGrade: 'B',
+        gpa: 8.0,
+        status: 'completed',
+      },
+      // Rohan Gupta current semester grades (in progress)
+      {
+        studentId: student4Id,
+        courseId: course9Id, // Data Mining
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student4Id,
+        courseId: course2Id, // Computer Architecture
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student4Id,
+        courseId: course1Id, // Principles of Programming Lang
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student4Id,
+        courseId: course3Id, // Theory of Computation
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student4Id,
+        courseId: course4Id, // Operating Systems
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      {
+        studentId: student4Id,
+        courseId: course10Id, // Intro to Psychology
+        semester: currentSemester,
+        status: 'in_progress',
+      },
+      // Rohan Gupta historical grades (Year 2 Semester 1 - Dean's List)
+      {
+        studentId: student4Id,
+        courseId: course7Id, // OOP - A
+        semester: 'FIRST SEMESTER 2024-2025',
+        finalGrade: 'A',
+        gpa: 10.0,
+        status: 'completed',
+      },
+      {
+        studentId: student4Id,
+        courseId: course8Id, // Logic in CS - A-
+        semester: 'FIRST SEMESTER 2024-2025',
+        finalGrade: 'A-',
+        gpa: 9.0,
+        status: 'completed',
+      },
     ]);
 
     // Create Payments
@@ -277,6 +557,30 @@ export async function seedDatabase(prisma: PrismaClient) {
         status: 'pending',
         dueDate: new Date('2025-12-01'),
         description: 'Library Fee',
+      },
+      // Shourya Tiwari payments (0.00 AED outstanding - cleared)
+      {
+        studentId: student3Id,
+        semester: currentSemester,
+        amount: 0,
+        status: 'paid',
+        dueDate: new Date('2025-08-15'),
+        paidDate: new Date('2025-08-05'),
+        paymentMethod: 'Online Transfer',
+        transactionId: 'TXN202508050404',
+        description: 'Tuition Fee - First Semester 2025-2026 (Cleared)',
+      },
+      // Rohan Gupta payments (0.00 AED outstanding - cleared, last payment 24,500 AED)
+      {
+        studentId: student4Id,
+        semester: currentSemester,
+        amount: 24500,
+        status: 'paid',
+        dueDate: new Date('2025-08-15'),
+        paidDate: new Date('2025-08-10'),
+        paymentMethod: 'Online Transfer',
+        transactionId: 'TXN202508100567',
+        description: 'Tuition and Hostel Fees - First Semester 2025-2026 (Cleared)',
       },
     ]);
 
@@ -409,6 +713,60 @@ export async function seedDatabase(prisma: PrismaClient) {
           status,
           points: status === 'present' ? 1 : 0,
           remarks: status === 'present' ? 'Self-recorded' : 'auto record by system',
+        });
+      }
+    }
+
+    // Shourya Tiwari attendance (avg 69.6%)
+    const shouryaCourses = [
+      { id: course2Id, attended: 34, total: 54 }, // Computer Architecture L4 - 63%
+      { id: course5Id, attended: 26, total: 38 }, // Machine Learning L1 - 68.4%
+      { id: course6Id, attended: 24, total: 39 }, // Modern Political Concepts - 61.5%
+      { id: course4Id, attended: 35, total: 57 }, // Operating Systems L4 - 61.4%
+      { id: course1Id, attended: 19, total: 28 }, // Principles of Prog Lang - 67.9%
+      { id: course3Id, attended: 39, total: 52 }, // Theory of Computation - 75%
+    ];
+
+    for (const course of shouryaCourses) {
+      for (let i = 0; i < course.total; i++) {
+        const date = new Date(2025, 8 + Math.floor(i / 20), 1 + (i % 28));
+        const status = i < course.attended ? 'present' : 'absent';
+        attendanceRecords.push({
+          studentId: student3Id,
+          courseId: course.id,
+          date,
+          startTime: new Date(date.setHours(9, 0, 0)),
+          endTime: new Date(date.setHours(10, 0, 0)),
+          status,
+          points: status === 'present' ? 1 : 0,
+          remarks: status === 'present' ? 'Present' : 'Absent',
+        });
+      }
+    }
+
+    // Rohan Gupta attendance (avg 88.5%)
+    const rohanCourses = [
+      { id: course2Id, attended: 48, total: 54 }, // Computer Architecture L4 - 88.9%
+      { id: course9Id, attended: 36, total: 40 }, // Data Mining L1 - 90%
+      { id: course10Id, attended: 28, total: 35 }, // Intro to Psychology L1 - 80%
+      { id: course4Id, attended: 50, total: 57 }, // Operating Systems L4 - 87.7%
+      { id: course1Id, attended: 26, total: 28 }, // Principles of Prog Lang - 92.8%
+      { id: course3Id, attended: 47, total: 52 }, // Theory of Computation - 90.4%
+    ];
+
+    for (const course of rohanCourses) {
+      for (let i = 0; i < course.total; i++) {
+        const date = new Date(2025, 8 + Math.floor(i / 20), 1 + (i % 28));
+        const status = i < course.attended ? 'present' : 'absent';
+        attendanceRecords.push({
+          studentId: student4Id,
+          courseId: course.id,
+          date,
+          startTime: new Date(date.setHours(9, 0, 0)),
+          endTime: new Date(date.setHours(10, 0, 0)),
+          status,
+          points: status === 'present' ? 1 : 0,
+          remarks: status === 'present' ? 'Present' : 'Absent',
         });
       }
     }
