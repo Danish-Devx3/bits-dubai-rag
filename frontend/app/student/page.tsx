@@ -7,44 +7,15 @@ import { ChatInput } from "@/components/chat/ChatInput";
 import { LogOut, Circle, Plus, DollarSign, GraduationCap, Calendar, BookOpen, CheckCircle, X, PanelLeftClose, PanelLeft, Trash2, MessageSquare } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useTheme } from "@/hooks/useTheme";
+import { useChatHistory, Message, ChatSession } from "@/hooks/useChatHistory";
 import { authApi, unifiedQueryApi, queryApi } from "@/lib/api";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  isLoading?: boolean;
-  hasError?: boolean;
-  canRetry?: boolean;
-  retryCount?: number;
-  originalQuery?: string;
-  recommendations?: string[];
-  metadata?: {
-    duration?: number;
-    durationFormatted?: string;
-  };
-}
-
-interface ChatSession {
-  id: string;
-  title: string;
-  messages: Message[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-const STORAGE_KEY = "bits-gpt-student-chats";
 
 export default function StudentPage() {
   const router = useRouter();
   const { theme, toggleTheme, mounted } = useTheme();
   const [user, setUser] = useState<any>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
-  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
-  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(260);
   const [isResizing, setIsResizing] = useState(false);
@@ -52,49 +23,21 @@ export default function StudentPage() {
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingContentRef = useRef<string>("");
 
-  const MIN_SIDEBAR_WIDTH = 200;
-  const MAX_SIDEBAR_WIDTH = 400;
-
-  // Load chat sessions from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setChatSessions(parsed);
-      } catch (e) {
-        console.error("Failed to parse chat history:", e);
-      }
-    }
-  }, []);
-
-  // Save chat sessions to localStorage
-  useEffect(() => {
-    if (chatSessions.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(chatSessions));
-    }
-  }, [chatSessions]);
-
-  // Auto-save current chat when messages change
-  useEffect(() => {
-    if (currentChatId && messages.length > 0) {
-      const nonLoadingMessages = messages.filter(m => !m.isLoading);
-      if (nonLoadingMessages.length > 0) {
-        setChatSessions(prev =>
-          prev.map(session =>
-            session.id === currentChatId
-              ? {
-                ...session,
-                messages: nonLoadingMessages,
-                title: nonLoadingMessages[0]?.content.slice(0, 35) + (nonLoadingMessages[0]?.content.length > 35 ? "..." : "") || "New Chat",
-                updatedAt: new Date().toISOString()
-              }
-              : session
-          )
-        );
-      }
-    }
-  }, [messages, currentChatId]);
+  // Secure chat history - user-specific and backend-synced
+  const {
+    sessions: chatSessions,
+    currentSessionId: currentChatId,
+    messages,
+    createSession,
+    addMessage,
+    updateMessage,
+    selectSession,
+    deleteSession,
+    startNewChat,
+    setMessages,
+  } = useChatHistory({
+    onError: (error) => console.error('Chat history error:', error),
+  });
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -127,6 +70,10 @@ export default function StudentPage() {
       return () => clearTimeout(timer);
     }
   }, [showWelcome]);
+
+  // Sidebar resize constants
+  const MIN_SIDEBAR_WIDTH = 200;
+  const MAX_SIDEBAR_WIDTH = 400;
 
   // Handle sidebar resizing
   const startResizing = useCallback((e: React.MouseEvent) => {
@@ -180,33 +127,16 @@ export default function StudentPage() {
   };
 
   const handleNewChat = () => {
-    // Just clear the current chat - a new session will be created when user sends first message
-    setCurrentChatId(null);
-    setMessages([]);
+    startNewChat();
   };
 
   const handleSelectChat = (session: ChatSession) => {
-    setCurrentChatId(session.id);
-    // Convert timestamp strings back to Date objects
-    const messagesWithDates = session.messages.map(m => ({
-      ...m,
-      timestamp: new Date(m.timestamp)
-    }));
-    setMessages(messagesWithDates);
+    selectSession(session.id);
   };
 
   const handleDeleteChat = (e: React.MouseEvent, chatId: string) => {
     e.stopPropagation();
-    setChatSessions(prev => prev.filter(s => s.id !== chatId));
-    if (currentChatId === chatId) {
-      setCurrentChatId(null);
-      setMessages([]);
-    }
-    // Update localStorage
-    const updated = chatSessions.filter(s => s.id !== chatId);
-    if (updated.length === 0) {
-      localStorage.removeItem(STORAGE_KEY);
-    }
+    deleteSession(chatId);
   };
 
   // Throttled update function for smooth streaming
@@ -218,13 +148,7 @@ export default function StudentPage() {
     }
 
     updateTimeoutRef.current = setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === msgId
-            ? { ...msg, content: pendingContentRef.current, isLoading: false }
-            : msg
-        )
-      );
+      updateMessage(msgId, { content: pendingContentRef.current, isLoading: false });
       pendingContentRef.current = "";
     }, 16);
   };
@@ -233,16 +157,8 @@ export default function StudentPage() {
     // If no current chat, create a new one (like ChatGPT)
     let chatId = currentChatId;
     if (!chatId) {
-      chatId = Date.now().toString();
-      const newSession: ChatSession = {
-        id: chatId,
-        title: userMessage.slice(0, 35) + (userMessage.length > 35 ? "..." : ""),
-        messages: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setChatSessions(prev => [newSession, ...prev]);
-      setCurrentChatId(chatId);
+      chatId = await createSession(userMessage);
+      selectSession(chatId);
     }
 
     const userMsg: Message = {
@@ -252,8 +168,9 @@ export default function StudentPage() {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    await addMessage(chatId, userMsg);
     setIsLoading(true);
+
 
     const assistantMsgId = Date.now().toString() + "1";
 
@@ -323,22 +240,15 @@ export default function StudentPage() {
         }
 
         if (chunkCount > 0 && fullResponse.trim()) {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === assistantMsgId
-                ? {
-                  ...msg,
-                  content: fullResponse.trim(),
-                  isLoading: false,
-                  recommendations: recommendations.length > 0 ? recommendations : undefined,
-                  metadata: responseMetadata ? {
-                    duration: responseMetadata.duration,
-                    durationFormatted: responseMetadata.durationFormatted
-                  } : undefined
-                }
-                : msg
-            )
-          );
+          updateMessage(assistantMsgId, {
+            content: fullResponse.trim(),
+            isLoading: false,
+            recommendations: recommendations.length > 0 ? recommendations : undefined,
+            metadata: responseMetadata ? {
+              duration: responseMetadata.duration,
+              durationFormatted: responseMetadata.durationFormatted
+            } : undefined
+          });
         } else if (!hasContent || !fullResponse.trim()) {
           throw new Error("No content from stream");
         }
@@ -381,45 +291,24 @@ export default function StudentPage() {
       }
 
       if (hasContent && fullResponse.trim()) {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMsgId
-              ? {
-                ...msg,
-                content: fullResponse.trim(),
-                isLoading: false,
-                recommendations: recommendations.length > 0 ? recommendations : undefined
-              }
-              : msg
-          )
-        );
+        updateMessage(assistantMsgId, {
+          content: fullResponse.trim(),
+          isLoading: false,
+          recommendations: recommendations.length > 0 ? recommendations : undefined
+        });
       } else {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMsgId
-              ? {
-                ...msg,
-                content: "I'm having trouble connecting to the server. Please try again.",
-                isLoading: false
-              }
-              : msg
-          )
-        );
+        updateMessage(assistantMsgId, {
+          content: "I'm having trouble connecting to the server. Please try again.",
+          isLoading: false
+        });
       }
     } catch (error: any) {
       console.error("Error sending message:", error);
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === assistantMsgId
-            ? {
-              ...msg,
-              content: "Connection failed. Please try again.",
-              isLoading: false,
-              hasError: true
-            }
-            : msg
-        )
-      );
+      updateMessage(assistantMsgId, {
+        content: "Connection failed. Please try again.",
+        isLoading: false,
+        hasError: true
+      });
     } finally {
       setIsLoading(false);
       if (updateTimeoutRef.current) {

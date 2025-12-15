@@ -322,6 +322,99 @@ export const publicApi = {
   },
 };
 
+// ========== Secure Chat History API ==========
+// All chat operations require authentication and are user-specific
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+  hasError?: boolean;
+  recommendations?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const chatApi = {
+  /**
+   * Get all chat sessions for the authenticated user
+   */
+  getSessions: async (): Promise<ChatSession[]> => {
+    const response = await backendApi.get('/chat/sessions');
+    return response.data;
+  },
+
+  /**
+   * Get a specific chat session by ID
+   */
+  getSession: async (sessionId: string): Promise<ChatSession> => {
+    const response = await backendApi.get(`/chat/sessions/${sessionId}`);
+    return response.data;
+  },
+
+  /**
+   * Create a new chat session
+   */
+  createSession: async (data: {
+    title: string;
+    messages?: Array<{
+      role: 'user' | 'assistant';
+      content: string;
+      hasError?: boolean;
+      recommendations?: string[];
+      metadata?: Record<string, any>;
+    }>;
+  }): Promise<ChatSession> => {
+    const response = await backendApi.post('/chat/sessions', data);
+    return response.data;
+  },
+
+  /**
+   * Update a chat session (e.g., rename title)
+   */
+  updateSession: async (sessionId: string, data: { title?: string }): Promise<ChatSession> => {
+    const response = await backendApi.put(`/chat/sessions/${sessionId}`, data);
+    return response.data;
+  },
+
+  /**
+   * Add a message to a chat session
+   */
+  addMessage: async (sessionId: string, data: {
+    role: 'user' | 'assistant';
+    content: string;
+    hasError?: boolean;
+    recommendations?: string[];
+    metadata?: Record<string, any>;
+  }): Promise<ChatMessage> => {
+    const response = await backendApi.post(`/chat/sessions/${sessionId}/messages`, data);
+    return response.data;
+  },
+
+  /**
+   * Delete a specific chat session
+   */
+  deleteSession: async (sessionId: string): Promise<{ success: boolean; message: string }> => {
+    const response = await backendApi.delete(`/chat/sessions/${sessionId}`);
+    return response.data;
+  },
+
+  /**
+   * Delete all chat sessions for the authenticated user
+   */
+  deleteAllSessions: async (): Promise<{ success: boolean; deletedCount: number }> => {
+    const response = await backendApi.delete('/chat/sessions');
+    return response.data;
+  },
+};
+
 // Unified Query API (routes to backend for classification, then to LightRAG or backend)
 export const unifiedQueryApi = {
   query: async (query: string) => {
