@@ -25,10 +25,11 @@ model Student {
   academicStatus String?
   practiceSchool Json?
   
-  enrollments Enrollment[]
-  grades      Grade[]
-  payments    Payment[]
-  attendances Attendance[]
+  enrollments  Enrollment[]
+  grades       Grade[]
+  payments     Payment[]
+  attendances  Attendance[]
+  chatSessions ChatSession[]
 
   @@map("students")
 }
@@ -39,8 +40,9 @@ model Admin {
   name      String
   email     String   @unique
   password  String
-  role      String   @default("admin")
-  status    String   @default("active")
+  role         String        @default("admin")
+  status       String        @default("active")
+  chatSessions ChatSession[]
 
   @@map("admins")
 }
@@ -156,4 +158,39 @@ model CourseSchedule {
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@map("course_schedules")
+}
+
+// Chat history models for secure, user-specific storage
+model ChatSession {
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  title      String
+  studentId  String?       @db.ObjectId
+  adminId    String?       @db.ObjectId
+  userRole   String        // "student" or "admin"
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  
+  messages   ChatMessage[]
+  student    Student?      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  admin      Admin?        @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([adminId])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId       String      @db.ObjectId
+  role            String      // "user" or "assistant"
+  content         String
+  timestamp       DateTime    @default(now())
+  hasError        Boolean?
+  recommendations String[]
+  metadata        Json?       // For duration, error info, etc.
+  
+  session         ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("chat_messages")
 }

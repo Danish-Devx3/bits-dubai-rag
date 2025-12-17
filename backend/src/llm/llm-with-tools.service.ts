@@ -19,10 +19,11 @@ export class LlmWithToolsService {
     private mcpToolsService: McpToolsService,
     private configService: ConfigService,
   ) {
-    this.ollama = new Ollama({
-      host: this.configService.get<string>('OLLAMA_BASE_URL') || 'http://localhost:11434',
-    });
-    this.llmModel = this.configService.get<string>('OLLAMA_LLM_MODEL') || 'deepseekv3.2-cloud';
+    const llmUrl = this.configService.get<string>('OLLAMA_BASE_URL') || 'http://localhost:11434';
+    this.ollama = new Ollama({ host: llmUrl });
+    this.llmModel = this.configService.get<string>('OLLAMA_LLM_MODEL') || 'deepseek-r1';
+
+    console.log(`[LLM With Tools] URL: ${llmUrl}, Model: ${this.llmModel}`);
   }
 
   /**

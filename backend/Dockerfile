@@ -13,7 +13,7 @@ COPY . .
 
 # Generate Prisma Client with the full schema
 # Using a dummy URL since prisma generate only needs the schema, not actual connection
-RUN DATABASE_URL="mongodb://localhost:27017/dummy" npx prisma generate
+RUN DATABASE_URL="mongodb+srv://bits:bits123@youtube.v7xaz1a.mongodb.net/bits_dubai?retryWrites=true&w=majority&appName=Youtube" npx prisma generate
 
 # Build the application
 RUN npm run build

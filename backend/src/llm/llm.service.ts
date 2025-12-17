@@ -6,7 +6,8 @@ import { QueryType } from '../query/query-classification.service';
 
 @Injectable()
 export class LlmService {
-  private ollama: Ollama;
+  private ollamaEmbedding: Ollama;  // For embeddings (local)
+  private ollamaLlm: Ollama;        // For LLM chat (can be cloud)
   private embeddingModel: string;
   private llmModel: string;
 
@@ -14,20 +15,32 @@ export class LlmService {
     private configService: ConfigService,
     private qdrantService: QdrantService,
   ) {
-    this.ollama = new Ollama({
-      host: this.configService.get<string>('OLLAMA_BASE_URL') || 'http://localhost:11434',
-    });
+    // Embedding client - uses local Ollama by default
+    const embeddingUrl = this.configService.get<string>('OLLAMA_EMBEDDING_URL')
+      || this.configService.get<string>('OLLAMA_BASE_URL')
+      || 'http://localhost:11434';
+
+    // LLM client - can use cloud API
+    const llmUrl = this.configService.get<string>('OLLAMA_BASE_URL') || 'http://localhost:11434';
+
+    this.ollamaEmbedding = new Ollama({ host: embeddingUrl });
+    this.ollamaLlm = new Ollama({ host: llmUrl });
+
     this.embeddingModel = this.configService.get<string>('OLLAMA_EMBEDDING_MODEL') || 'bge-m3';
-    this.llmModel = this.configService.get<string>('OLLAMA_LLM_MODEL') || 'deepseekv3.2-cloud';
+    this.llmModel = this.configService.get<string>('OLLAMA_LLM_MODEL') || 'deepseek-r1';
+
+    console.log(`[LLM Service] Embedding URL: ${embeddingUrl}, Model: ${this.embeddingModel}`);
+    console.log(`[LLM Service] LLM URL: ${llmUrl}, Model: ${this.llmModel}`);
   }
 
   async getEmbedding(text: string): Promise<number[]> {
-    const response = await this.ollama.embeddings({
+    const response = await this.ollamaEmbedding.embeddings({
       model: this.embeddingModel,
       prompt: text,
     });
     return response.embedding;
   }
+
 
   async generateResponse(
     query: string,
@@ -38,7 +51,7 @@ export class LlmService {
   ): Promise<string> {
     try {
       // 1. Get Embedding
-      const embeddingResponse = await this.ollama.embeddings({
+      const embeddingResponse = await this.ollamaEmbedding.embeddings({
         model: this.embeddingModel,
         prompt: query,
       });
@@ -81,7 +94,7 @@ export class LlmService {
       ];
 
       // 4. Generate
-      const response = await this.ollama.chat({
+      const response = await this.ollamaLlm.chat({
         model: this.llmModel,
         messages: messages,
       });
@@ -103,7 +116,7 @@ export class LlmService {
   ): AsyncGenerator<string, void, unknown> {
     try {
       // 1. Get Embedding
-      const embeddingResponse = await this.ollama.embeddings({
+      const embeddingResponse = await this.ollamaEmbedding.embeddings({
         model: this.embeddingModel,
         prompt: query,
       });
@@ -143,7 +156,7 @@ export class LlmService {
       ];
 
       // 4. Stream Response
-      const responseStream = await this.ollama.chat({
+      const responseStream = await this.ollamaLlm.chat({
         model: this.llmModel,
         messages: messages,
         stream: true,
