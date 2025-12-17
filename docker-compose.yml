@@ -82,7 +82,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_BACKEND_URL=http://3.92.146.237:3001
+      - NEXT_PUBLIC_BACKEND_URL=http://100.30.232.249:3001
     depends_on:
       - backend
 
