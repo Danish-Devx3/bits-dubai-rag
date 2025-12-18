@@ -19,8 +19,12 @@ export class LlmWithToolsService {
     private mcpToolsService: McpToolsService,
     private configService: ConfigService,
   ) {
-    const llmUrl = this.configService.get<string>('OLLAMA_BASE_URL') || 'http://localhost:11434';
-    this.ollama = new Ollama({ host: llmUrl });
+    const llmUrl = this.configService.get<string>('OLLAMA_BASE_CLOUD_URL')
+      || "https://ollama.com"
+    const apiKey = this.configService.get<string>('OLLAMA_API_KEY');
+    const headers = apiKey ? { 'Authorization': `Bearer ${apiKey}` } : undefined;
+
+    this.ollama = new Ollama({ host: llmUrl, headers });
     this.llmModel = this.configService.get<string>('OLLAMA_LLM_MODEL') || 'deepseek-r1';
 
     // Self-healing for Windows localhost issues
@@ -32,7 +36,7 @@ export class LlmWithToolsService {
         } catch (e) {
           const fallback = llmUrl.replace('localhost', '127.0.0.1');
           console.warn(`⚠️ Ollama (Tools) connection to ${llmUrl} failed. Switching to internal fallback: ${fallback}`);
-          this.ollama = new Ollama({ host: fallback });
+          this.ollama = new Ollama({ host: fallback, headers });
         }
       };
       testConnection();

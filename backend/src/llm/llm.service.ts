@@ -16,15 +16,19 @@ export class LlmService {
     private qdrantService: QdrantService,
   ) {
     // Embedding client - uses local Ollama by default
-    const embeddingUrl = this.configService.get<string>('OLLAMA_EMBEDDING_URL')
-      || this.configService.get<string>('OLLAMA_BASE_URL')
+    const embeddingUrl = this.configService.get<string>('OLLAMA_BASE_URL')
       || 'http://ollama:11434';
 
     // LLM client - can use cloud API
-    const llmUrl = this.configService.get<string>('OLLAMA_BASE_URL') || 'http://localhost:11434';
+    // LLM client - can use cloud API
+    const llmUrl = this.configService.get<string>('OLLAMA_BASE_CLOUD_URL')
+      || "https://ollama.com";
+    const apiKey = this.configService.get<string>('OLLAMA_API_KEY');
 
-    this.ollamaEmbedding = new Ollama({ host: embeddingUrl });
-    this.ollamaLlm = new Ollama({ host: llmUrl });
+    const headers = apiKey ? { 'Authorization': `Bearer ${apiKey}` } : undefined;
+
+    this.ollamaEmbedding = new Ollama({ host: embeddingUrl }); // Local embeddings don't need the key
+    this.ollamaLlm = new Ollama({ host: llmUrl, headers });
 
     // Self-healing for Windows localhost issues
     if (llmUrl.includes('localhost')) {
@@ -35,7 +39,7 @@ export class LlmService {
         } catch (e) {
           const fallback = llmUrl.replace('localhost', '127.0.0.1');
           console.warn(`⚠️ LLM connection to ${llmUrl} failed. Switching to internal fallback: ${fallback}`);
-          this.ollamaLlm = new Ollama({ host: fallback });
+          this.ollamaLlm = new Ollama({ host: fallback, headers });
           this.ollamaEmbedding = new Ollama({ host: embeddingUrl.replace('localhost', '127.0.0.1') });
         }
       };

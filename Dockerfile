@@ -41,6 +41,10 @@ RUN npm ci
 # Copy source files
 COPY frontend/ .
 
+# Build Argument for Backend URL
+ARG NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
+
 # Build the application
 RUN npm run build
 
@@ -49,10 +53,10 @@ RUN npm run build
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS runner
 
-# Install process manager to run multiple services
-RUN npm install -g concurrently
-
 WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache curl
 
 # Copy Backend
 COPY --from=backend-builder /app/backend/node_modules ./backend/node_modules
@@ -65,18 +69,18 @@ COPY --from=frontend-builder /app/frontend/public ./frontend/public
 COPY --from=frontend-builder /app/frontend/.next/standalone ./frontend/
 COPY --from=frontend-builder /app/frontend/.next/static ./frontend/.next/static
 
-# Create startup script
-RUN echo '#!/bin/sh' > /app/start.sh && \
-    echo 'cd /app/backend && node dist/main.js &' >> /app/start.sh && \
-    echo 'cd /app/frontend && node server.js &' >> /app/start.sh && \
-    echo 'wait' >> /app/start.sh && \
-    chmod +x /app/start.sh
-
-# Set environment
-ENV NODE_ENV=production
-
-# Expose both ports
+# Expose ports
 EXPOSE 3000 3001
 
-# Start both services
-CMD ["/bin/sh", "/app/start.sh"]
+# Start Script
+RUN echo '#!/bin/sh' > /app/run.sh && \
+    echo 'echo "🚀 Starting Backend..." &&' >> /app/run.sh && \
+    echo 'cd /app/backend && npx prisma generate && node dist/main.js & ' >> /app/run.sh && \
+    echo 'echo "🚀 Starting Frontend..." &&' >> /app/run.sh && \
+    echo 'cd /app/frontend && node server.js & ' >> /app/run.sh && \
+    echo 'wait' >> /app/run.sh && \
+    chmod +x /app/run.sh
+
+ENV NODE_ENV=production
+
+CMD ["/bin/sh", "/app/run.sh"]
