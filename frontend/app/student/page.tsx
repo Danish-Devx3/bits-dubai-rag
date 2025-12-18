@@ -61,7 +61,7 @@ export default function StudentPage() {
       }
     };
     checkAuth();
-  }, [router]);
+  }, []);
 
   // Hide welcome toast after 5 seconds
   useEffect(() => {

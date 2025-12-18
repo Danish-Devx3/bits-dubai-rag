@@ -130,7 +130,7 @@ export function useChatHistory(options: UseChatHistoryOptions = {}) {
     // Initial load
     useEffect(() => {
         loadSessions();
-    }, [loadSessions]);
+    }, []);
 
     // Save to localStorage as backup (with user-specific key)
     const saveToLocalStorage = useCallback((sessionsToSave: ChatSession[]) => {

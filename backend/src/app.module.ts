@@ -10,6 +10,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { QdrantModule } from './qdrant/qdrant.module';
 import { IngestionModule } from './ingestion/ingestion.module';
 import { ChatModule } from './chat/chat.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ChatModule } from './chat/chat.module';
     LlmModule,
     IngestionModule,
     ChatModule,
+    AdminModule,
   ],
 })
 export class AppModule { }

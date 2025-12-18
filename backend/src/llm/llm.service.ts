@@ -18,10 +18,10 @@ export class LlmService {
     // Embedding client - uses local Ollama by default
     const embeddingUrl = this.configService.get<string>('OLLAMA_EMBEDDING_URL')
       || this.configService.get<string>('OLLAMA_BASE_URL')
-      || 'http://localhost:11434';
+      || 'http://ollama:11434';
 
     // LLM client - can use cloud API
-    const llmUrl = this.configService.get<string>('OLLAMA_BASE_URL') || 'http://localhost:11434';
+    const llmUrl = this.configService.get<string>('OLLAMA_BASE_URL') || 'http://ollama:11434';
 
     this.ollamaEmbedding = new Ollama({ host: embeddingUrl });
     this.ollamaLlm = new Ollama({ host: llmUrl });

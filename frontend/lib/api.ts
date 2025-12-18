@@ -322,6 +322,19 @@ export const publicApi = {
   },
 };
 
+// Admin Data Management
+export const adminApi = {
+  getAllStudents: async () => {
+    const response = await backendApi.get("/admin/students");
+    return response.data;
+  },
+
+  getStudentDetails: async (id: string) => {
+    const response = await backendApi.get(`/admin/students/${id}`);
+    return response.data;
+  },
+};
+
 // ========== Secure Chat History API ==========
 // All chat operations require authentication and are user-specific
 export interface ChatMessage {

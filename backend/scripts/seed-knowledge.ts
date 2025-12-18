@@ -13,7 +13,7 @@ dotenv.config();
 // Configuration
 const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
 const QDRANT_COLLECTION = process.env.QDRANT_COLLECTION || 'bits_dubai_knowledge_base';
-const OLLAMA_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+const OLLAMA_URL = process.env.OLLAMA_BASE_URL || 'http://ollama:11434';
 const EMBEDDING_MODEL = process.env.OLLAMA_EMBEDDING_MODEL || 'bge-m3';
 const DATA_DIR = path.resolve(__dirname, '../../dataforseed');
 

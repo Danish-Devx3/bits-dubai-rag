@@ -93,9 +93,9 @@ export class IntentRecognitionService {
     private llmModel: string;
 
     constructor(private configService: ConfigService) {
-        const llmUrl = this.configService.get<string>('OLLAMA_BASE_URL') || 'http://localhost:11434';
+        const llmUrl = this.configService.get<string>('OLLAMA_BASE_URL') || 'http://ollama:11434';
         this.ollama = new Ollama({ host: llmUrl });
-        this.llmModel = this.configService.get<string>('OLLAMA_LLM_MODEL') || 'deepseek-r1';
+        this.llmModel = this.configService.get<string>('OLLAMA_LLM_MODEL') || 'deepseek-v3.1:671b-cloud';
 
         console.log(`[Intent Recognition] URL: ${llmUrl}, Model: ${this.llmModel}`);
     }

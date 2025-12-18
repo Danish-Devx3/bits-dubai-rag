@@ -62,7 +62,7 @@ services:
       # Cloud LLM API (provide your API key in .env file)
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-https://api.ollama.com}
       - OLLAMA_API_KEY=${OLLAMA_API_KEY}
-      - OLLAMA_LLM_MODEL=deepseek-r1
+      - OLLAMA_LLM_MODEL=deepseek-v3.1:671b-cloud
 
       # Qdrant Vector Database
       - QDRANT_URL=http://qdrant:6333
