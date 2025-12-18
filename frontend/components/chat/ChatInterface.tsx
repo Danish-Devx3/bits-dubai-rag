@@ -238,67 +238,24 @@ export function ChatInterface({
     const assistantMsgId = messageId;
 
     try {
+      const response = await queryApi.query({
+        query: originalQuery,
+        mode: "mix",
+        include_references: false,
+      });
+
       let fullResponse = "";
       let hasContent = false;
 
-      try {
-        let chunkCount = 0;
-        for await (const chunk of queryApi.queryStream({
-          query: originalQuery,
-          mode: "mix",
-        })) {
-          if (chunk && chunk.trim()) {
-            chunkCount++;
-            fullResponse += chunk;
-            hasContent = true;
-            updateMessageContent(assistantMsgId, fullResponse);
-          }
-        }
-
-        if (updateTimeoutRef.current) {
-          clearTimeout(updateTimeoutRef.current);
-        }
-
-        if (chunkCount > 0 && fullResponse.trim()) {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === assistantMsgId
-                ? {
-                  ...msg,
-                  content: fullResponse.trim(),
-                  isLoading: false,
-                  hasError: false,
-                  canRetry: false,
-                }
-                : msg
-            )
-          );
-        } else if (!hasContent || !fullResponse.trim()) {
-          throw new Error("No content from stream");
-        }
-      } catch (streamError: any) {
-        console.warn("Streaming failed, falling back to regular query:", streamError);
-        try {
-          const response = await queryApi.query({
-            query: originalQuery,
-            mode: "mix",
-            include_references: false,
-          });
-
-          if (response && response.response) {
-            fullResponse = response.response;
-            hasContent = true;
-          } else if (response && typeof response === "string") {
-            fullResponse = response;
-            hasContent = true;
-          } else if (response && response.message) {
-            fullResponse = response.message;
-            hasContent = true;
-          }
-        } catch (queryError: any) {
-          console.error("Fallback query also failed:", queryError);
-          throw queryError;
-        }
+      if (response && response.response) {
+        fullResponse = response.response;
+        hasContent = true;
+      } else if (response && typeof response === "string") {
+        fullResponse = response;
+        hasContent = true;
+      } else if (response && response.message) {
+        fullResponse = response.message;
+        hasContent = true;
       }
 
       if (hasContent && fullResponse.trim()) {
@@ -315,8 +272,6 @@ export function ChatInterface({
               : msg
           )
         );
-      } else {
-        throw new Error("No content received");
       }
     } catch (error: any) {
       console.error("Retry failed:", error);
@@ -347,7 +302,7 @@ export function ChatInterface({
     } finally {
       setIsLoading(false);
     }
-  }, [setMessages, setIsLoading, updateMessageContent]);
+  }, [setMessages, setIsLoading]);
 
   const handleSend = async (userMessage: string) => {
     // Dismiss welcome toast when user sends first message
@@ -382,128 +337,37 @@ export function ChatInterface({
       let recommendations: string[] = [];
       let timetableData: TimetableSchedule[] | undefined = undefined;
       let contentType: 'text' | 'timetable' = 'text';
+      let responseMetadata: any = null;
 
-      try {
-        let chunkCount = 0;
-        let responseMetadata: any = null;
-        const user = localStorage.getItem("user");
-        if (user) {
-          for await (const chunk of unifiedQueryApi.queryStream(userMessage)) {
-            try {
-              const parsed = JSON.parse(chunk);
-              if (parsed.type === 'metadata') {
-                responseMetadata = parsed;
-                continue;
-              }
-            } catch (e) {
-              // Not JSON, treat as content
-            }
+      const user = localStorage.getItem("user");
+      const queryResult = user ? await unifiedQueryApi.query(userMessage) : await queryApi.query({
+        query: userMessage,
+        mode: "mix",
+        include_references: false,
+      });
 
-            if (chunk && chunk.trim()) {
-              chunkCount++;
-              fullResponse += chunk;
-              hasContent = true;
-              updateMessageContent(assistantMsgId, fullResponse);
-            }
-          }
+      if (queryResult && queryResult.response) {
+        fullResponse = queryResult.response;
+        hasContent = true;
+      } else if (queryResult && typeof queryResult === "string") {
+        fullResponse = queryResult;
+        hasContent = true;
+      } else if (queryResult && queryResult.message) {
+        fullResponse = queryResult.message;
+        hasContent = true;
+      }
 
-          try {
-            const queryResult = await unifiedQueryApi.query(userMessage);
-            if (queryResult.recommendations && Array.isArray(queryResult.recommendations)) {
-              recommendations = queryResult.recommendations;
-            }
-            // Capture timetable data if present
-            if (queryResult.timetable && Array.isArray(queryResult.timetable) && queryResult.timetable.length > 0) {
-              timetableData = queryResult.timetable;
-              contentType = 'timetable';
-            }
-          } catch (e) {
-            console.log("Could not fetch recommendations:", e);
-          }
-        } else {
-          for await (const chunk of queryApi.queryStream({
-            query: userMessage,
-            mode: "mix",
-          })) {
-            if (chunk && chunk.trim()) {
-              chunkCount++;
-              fullResponse += chunk;
-              hasContent = true;
-              updateMessageContent(assistantMsgId, fullResponse);
-            }
-          }
-        }
+      if (queryResult.recommendations && Array.isArray(queryResult.recommendations)) {
+        recommendations = queryResult.recommendations;
+      }
 
-        if (updateTimeoutRef.current) {
-          clearTimeout(updateTimeoutRef.current);
-        }
+      if (queryResult.metadata) {
+        responseMetadata = queryResult.metadata;
+      }
 
-        if (chunkCount > 0 && fullResponse.trim()) {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === assistantMsgId
-                ? {
-                  ...msg,
-                  content: fullResponse.trim(),
-                  isLoading: false,
-                  recommendations: recommendations.length > 0 ? recommendations : undefined,
-                  metadata: responseMetadata ? {
-                    duration: responseMetadata.duration,
-                    durationFormatted: responseMetadata.durationFormatted
-                  } : undefined,
-                  timetable: timetableData,
-                  contentType: contentType,
-                }
-                : msg
-            )
-          );
-        } else if (!hasContent || !fullResponse.trim()) {
-          console.warn("Streaming yielded no content, trying fallback query");
-          throw new Error("No content from stream");
-        }
-      } catch (streamError: any) {
-        console.warn("Streaming failed, falling back to regular query:", streamError);
-        try {
-          const user = localStorage.getItem("user");
-          let response;
-          if (user) {
-            response = await unifiedQueryApi.query(userMessage);
-            if (response && response.response) {
-              fullResponse = response.response;
-              hasContent = true;
-            }
-            if (response && response.recommendations && Array.isArray(response.recommendations)) {
-              recommendations = response.recommendations;
-            }
-            // Capture timetable in fallback path
-            if (response && response.timetable && Array.isArray(response.timetable) && response.timetable.length > 0) {
-              timetableData = response.timetable;
-              contentType = 'timetable';
-            }
-          } else {
-            response = await queryApi.query({
-              query: userMessage,
-              mode: "mix",
-              include_references: false,
-            });
-          }
-
-          console.log("Fallback query response:", response);
-
-          if (response && response.response) {
-            fullResponse = response.response;
-            hasContent = true;
-          } else if (response && typeof response === "string") {
-            fullResponse = response;
-            hasContent = true;
-          } else if (response && response.message) {
-            fullResponse = response.message;
-            hasContent = true;
-          }
-        } catch (queryError: any) {
-          console.error("Fallback query also failed:", queryError);
-          throw queryError;
-        }
+      if (queryResult.timetable && Array.isArray(queryResult.timetable) && queryResult.timetable.length > 0) {
+        timetableData = queryResult.timetable;
+        contentType = 'timetable';
       }
 
       if (hasContent && fullResponse.trim()) {
@@ -515,20 +379,12 @@ export function ChatInterface({
                 content: fullResponse.trim(),
                 isLoading: false,
                 recommendations: recommendations.length > 0 ? recommendations : undefined,
+                metadata: responseMetadata ? {
+                  duration: responseMetadata.duration,
+                  durationFormatted: responseMetadata.durationFormatted
+                } : undefined,
                 timetable: timetableData,
                 contentType: contentType,
-              }
-              : msg
-          )
-        );
-      } else {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMsgId
-              ? {
-                ...msg,
-                content: "I'm having trouble connecting to the server. Please check if the RAG server is running and try again.",
-                isLoading: false
               }
               : msg
           )

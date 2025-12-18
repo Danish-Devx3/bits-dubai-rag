@@ -9,11 +9,17 @@ services:
     restart: always
     ports:
       - "6333:6333"
+      - "6334:6334"
     volumes:
       - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:6333/healthz" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # ---------------------------------------------------------------------------
-  # Local Ollama (for embeddings only - runs bge-m3)
+  # Local Ollama (for embeddings)
   # ---------------------------------------------------------------------------
   ollama:
     image: ollama/ollama:latest
@@ -40,10 +46,12 @@ services:
 
   # ---------------------------------------------------------------------------
   # Backend: NestJS
-  # The core API server.
   # ---------------------------------------------------------------------------
   backend:
-    image: ayaan27/bits-dubai-rag-backend:latest
+    image: ddon8889722/backend-v1:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: bits_backend
     restart: always
     ports:
@@ -59,7 +67,7 @@ services:
       - OLLAMA_EMBEDDING_URL=http://ollama:11434
       - OLLAMA_EMBEDDING_MODEL=bge-m3
 
-      # Cloud LLM API (provide your API key in .env file)
+      # Cloud LLM API
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-https://api.ollama.com}
       - OLLAMA_API_KEY=${OLLAMA_API_KEY}
       - OLLAMA_LLM_MODEL=deepseek-v3.1:671b-cloud
@@ -68,21 +76,27 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - QDRANT_COLLECTION=bits_dubai_knowledge_base
     depends_on:
-      - qdrant
-      - ollama
+      qdrant:
+        condition: service_healthy
+      ollama:
+        condition: service_started
 
   # ---------------------------------------------------------------------------
   # Frontend: Next.js
-  # The web user interface.
   # ---------------------------------------------------------------------------
   frontend:
-    image: ayaan27/bits-dubai-rag-frontend:latest
+    image: ddon8889722/frontend-v1:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
     container_name: bits_frontend
     restart: always
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_BACKEND_URL=http://100.30.232.249:3001
+      - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL:-http://localhost:3001}
     depends_on:
       - backend
 

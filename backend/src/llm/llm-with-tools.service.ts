@@ -19,9 +19,24 @@ export class LlmWithToolsService {
     private mcpToolsService: McpToolsService,
     private configService: ConfigService,
   ) {
-    const llmUrl = this.configService.get<string>('OLLAMA_BASE_URL') || 'http://ollama:11434';
+    const llmUrl = this.configService.get<string>('OLLAMA_BASE_URL') || 'http://localhost:11434';
     this.ollama = new Ollama({ host: llmUrl });
     this.llmModel = this.configService.get<string>('OLLAMA_LLM_MODEL') || 'deepseek-r1';
+
+    // Self-healing for Windows localhost issues
+    if (llmUrl.includes('localhost')) {
+      const testConnection = async () => {
+        try {
+          await this.ollama.list();
+          console.log(`✅ Ollama (Tools) connected at ${llmUrl}`);
+        } catch (e) {
+          const fallback = llmUrl.replace('localhost', '127.0.0.1');
+          console.warn(`⚠️ Ollama (Tools) connection to ${llmUrl} failed. Switching to internal fallback: ${fallback}`);
+          this.ollama = new Ollama({ host: fallback });
+        }
+      };
+      testConnection();
+    }
 
     console.log(`[LLM With Tools] URL: ${llmUrl}, Model: ${this.llmModel}`);
   }
@@ -106,6 +121,9 @@ export class LlmWithToolsService {
       return finalResponse.message.content;
 
     } catch (error: any) {
+      if (error.status_code === 503) {
+        console.error('❌ Ollama Service Unavailable (503) in Tools Service. Check model size and proxy.');
+      }
       console.error('LLM with tools error:', error);
       return await this.fallbackToolExecution(query, studentId, queryType);
     }

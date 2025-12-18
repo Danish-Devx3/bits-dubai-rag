@@ -444,6 +444,7 @@ export const unifiedQueryApi = {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
+        credentials: "include", // Essential for HttpOnly cookies
         body: JSON.stringify({ query }),
       });
 

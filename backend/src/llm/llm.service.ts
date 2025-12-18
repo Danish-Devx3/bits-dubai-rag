@@ -21,10 +21,26 @@ export class LlmService {
       || 'http://ollama:11434';
 
     // LLM client - can use cloud API
-    const llmUrl = this.configService.get<string>('OLLAMA_BASE_URL') || 'http://ollama:11434';
+    const llmUrl = this.configService.get<string>('OLLAMA_BASE_URL') || 'http://localhost:11434';
 
     this.ollamaEmbedding = new Ollama({ host: embeddingUrl });
     this.ollamaLlm = new Ollama({ host: llmUrl });
+
+    // Self-healing for Windows localhost issues
+    if (llmUrl.includes('localhost')) {
+      const testConnection = async () => {
+        try {
+          await this.ollamaLlm.list();
+          console.log(`✅ Ollama connected at ${llmUrl}`);
+        } catch (e) {
+          const fallback = llmUrl.replace('localhost', '127.0.0.1');
+          console.warn(`⚠️ LLM connection to ${llmUrl} failed. Switching to internal fallback: ${fallback}`);
+          this.ollamaLlm = new Ollama({ host: fallback });
+          this.ollamaEmbedding = new Ollama({ host: embeddingUrl.replace('localhost', '127.0.0.1') });
+        }
+      };
+      testConnection();
+    }
 
     this.embeddingModel = this.configService.get<string>('OLLAMA_EMBEDDING_MODEL') || 'bge-m3';
     this.llmModel = this.configService.get<string>('OLLAMA_LLM_MODEL') || 'deepseek-r1';
@@ -101,7 +117,12 @@ export class LlmService {
 
       return response.message.content;
 
-    } catch (error) {
+    } catch (error: any) {
+      if (error.status_code === 503) {
+        console.error('❌ Ollama Service Unavailable (503). This usually means the model is too large, still loading, or the proxy failed.');
+      } else if (error.code === 'ECONNREFUSED' || error.message?.includes('fetch failed')) {
+        console.error('❌ Connection failed. Ensure Ollama/Qdrant are running and check if localhost vs 127.0.0.1 is an issue.');
+      }
       console.error('LLM Generation Error:', error);
       return this.generateFallbackResponse(query, contextData);
     }

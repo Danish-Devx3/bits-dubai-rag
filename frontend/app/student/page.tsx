@@ -187,114 +187,32 @@ export default function StudentPage() {
       let fullResponse = "";
       let hasContent = false;
       let recommendations: string[] = [];
+      let responseMetadata: any = null;
 
-      try {
-        let chunkCount = 0;
-        let responseMetadata: any = null;
-        const user = localStorage.getItem("user");
+      const response = await unifiedQueryApi.query(userMessage);
 
-        if (user) {
-          for await (const chunk of unifiedQueryApi.queryStream(userMessage)) {
-            try {
-              const parsed = JSON.parse(chunk);
-              if (parsed.type === 'metadata') {
-                responseMetadata = parsed;
-                continue;
-              }
-            } catch (e) {
-              // Not JSON, treat as content
-            }
+      if (response && response.response) {
+        fullResponse = response.response;
+        hasContent = true;
+      }
 
-            if (chunk && chunk.trim()) {
-              chunkCount++;
-              fullResponse += chunk;
-              hasContent = true;
-              updateMessageContent(assistantMsgId, fullResponse);
-            }
-          }
+      if (response && response.recommendations && Array.isArray(response.recommendations)) {
+        recommendations = response.recommendations;
+      }
 
-          try {
-            const queryResult = await unifiedQueryApi.query(userMessage);
-            if (queryResult.recommendations && Array.isArray(queryResult.recommendations)) {
-              recommendations = queryResult.recommendations;
-            }
-          } catch (e) {
-            console.log("Could not fetch recommendations:", e);
-          }
-        } else {
-          for await (const chunk of queryApi.queryStream({
-            query: userMessage,
-            mode: "mix",
-          })) {
-            if (chunk && chunk.trim()) {
-              chunkCount++;
-              fullResponse += chunk;
-              hasContent = true;
-              updateMessageContent(assistantMsgId, fullResponse);
-            }
-          }
-        }
-
-        if (updateTimeoutRef.current) {
-          clearTimeout(updateTimeoutRef.current);
-        }
-
-        if (chunkCount > 0 && fullResponse.trim()) {
-          updateMessage(assistantMsgId, {
-            content: fullResponse.trim(),
-            isLoading: false,
-            recommendations: recommendations.length > 0 ? recommendations : undefined,
-            metadata: responseMetadata ? {
-              duration: responseMetadata.duration,
-              durationFormatted: responseMetadata.durationFormatted
-            } : undefined
-          });
-        } else if (!hasContent || !fullResponse.trim()) {
-          throw new Error("No content from stream");
-        }
-      } catch (streamError: any) {
-        console.warn("Streaming failed, falling back to regular query:", streamError);
-        try {
-          const user = localStorage.getItem("user");
-          let response;
-          if (user) {
-            response = await unifiedQueryApi.query(userMessage);
-            if (response && response.response) {
-              fullResponse = response.response;
-              hasContent = true;
-            }
-            if (response && response.recommendations && Array.isArray(response.recommendations)) {
-              recommendations = response.recommendations;
-            }
-          } else {
-            response = await queryApi.query({
-              query: userMessage,
-              mode: "mix",
-              include_references: false,
-            });
-          }
-
-          if (response && response.response) {
-            fullResponse = response.response;
-            hasContent = true;
-          } else if (response && typeof response === "string") {
-            fullResponse = response;
-            hasContent = true;
-          } else if (response && response.message) {
-            fullResponse = response.message;
-            hasContent = true;
-          }
-        } catch (queryError: any) {
-          console.error("Fallback query also failed:", queryError);
-          throw queryError;
-        }
+      if (response && response.metadata) {
+        responseMetadata = response.metadata;
       }
 
       if (hasContent && fullResponse.trim()) {
         updateMessage(assistantMsgId, {
           content: fullResponse.trim(),
           isLoading: false,
-          recommendations: recommendations.length > 0 ? recommendations : undefined
+          recommendations: recommendations.length > 0 ? recommendations : undefined,
+          metadata: responseMetadata ? {
+            duration: responseMetadata.duration,
+            durationFormatted: responseMetadata.durationFormatted
+          } : undefined
         });
       } else {
         updateMessage(assistantMsgId, {
