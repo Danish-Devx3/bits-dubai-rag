@@ -5,7 +5,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @Post('login')
   async login(
@@ -13,19 +13,21 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.login(loginDto.email, loginDto.password);
-    
+
     // Set HttpOnly cookie
+    // For cross-origin (different ports), cookies need special handling
     res.cookie('access_token', result.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production (HTTPS)
-      sameSite: 'lax', // CSRF protection
+      secure: false, // Set to true when using HTTPS
+      sameSite: 'lax', // 'none' requires HTTPS; 'lax' works for same-site with different ports
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/',
     });
 
-    // Return user data without token
+    // Return user data AND token (for cross-origin HTTP fallback via Authorization header)
     return {
       user: result.user,
+      access_token: result.access_token,
     };
   }
 

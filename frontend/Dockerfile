@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Accept build arguments for NEXT_PUBLIC variables
-ARG NEXT_PUBLIC_BACKEND_URL=http://100.30.232.249:3001
+ARG NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
 ARG NEXT_PUBLIC_API_URL=http://localhost:9621 
 
 # Set as environment variables during build
@@ -17,6 +17,10 @@ COPY . .
 RUN npm run build
 
 FROM node:20-alpine AS runner
+
+# Install curl for healthchecks
+RUN apk add --no-cache curl
+
 WORKDIR /app
 
 ENV NODE_ENV=production

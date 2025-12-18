@@ -11,6 +11,7 @@ import { QdrantModule } from './qdrant/qdrant.module';
 import { IngestionModule } from './ingestion/ingestion.module';
 import { ChatModule } from './chat/chat.module';
 
+
 @Module({
   imports: [
     ConfigModule.forRoot({

@@ -49,6 +49,9 @@ RUN npm run build
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS runner
 
+# Install curl for healthchecks
+RUN apk add --no-cache curl
+
 # Install process manager to run multiple services
 RUN npm install -g concurrently
 
@@ -67,8 +70,12 @@ COPY --from=frontend-builder /app/frontend/.next/static ./frontend/.next/static
 
 # Create startup script
 RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'set -e' >> /app/start.sh && \
     echo 'cd /app/backend && node dist/main.js &' >> /app/start.sh && \
+    echo 'BACKEND_PID=$!' >> /app/start.sh && \
     echo 'cd /app/frontend && node server.js &' >> /app/start.sh && \
+    echo 'FRONTEND_PID=$!' >> /app/start.sh && \
+    echo 'trap "kill $BACKEND_PID $FRONTEND_PID; exit" SIGTERM SIGINT' >> /app/start.sh && \
     echo 'wait' >> /app/start.sh && \
     chmod +x /app/start.sh
 

@@ -32,8 +32,14 @@ lightragApi.interceptors.request.use((config) => {
   return config;
 });
 
-// Backend API now uses HttpOnly cookies, no need to add Authorization header
-// Cookies are automatically sent with withCredentials: true
+// Backend API now uses HttpOnly cookies, but also supports Authorization header as fallback
+backendApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem("access_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 // ========== LightRAG Query API (for document-based queries) ==========
 export const queryApi = {
@@ -210,7 +216,10 @@ export const documentApi = {
 export const authApi = {
   login: async (email: string, password: string) => {
     const response = await backendApi.post("/auth/login", { email, password });
-    // Token is now stored in HttpOnly cookie, only store user data
+    // Store token for Authorization header (fallback for cross-origin HTTP)
+    if (response.data.access_token) {
+      localStorage.setItem("access_token", response.data.access_token);
+    }
     if (response.data.user) {
       localStorage.setItem("user", JSON.stringify(response.data.user));
     }
@@ -234,6 +243,7 @@ export const authApi = {
       console.error("Logout error:", error);
     } finally {
       // Clear local storage
+      localStorage.removeItem("access_token");
       localStorage.removeItem("user");
       localStorage.removeItem("userType");
       localStorage.removeItem("userEmail");
